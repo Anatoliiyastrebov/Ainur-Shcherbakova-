@@ -182,11 +182,21 @@ export const generateMarkdown = (
     man: t.mdMan,
   };
 
-  let md = `**${headers[type]}**\n`;
+  // Escape special characters for HTML (Telegram supports HTML parse mode)
+  const escapeHtml = (text: string): string => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  // Start with header
+  let html = `<b>${escapeHtml(headers[type])}</b>\n`;
 
   let questionNumber = 1;
   let digestionQuestionPassed = false;
-  let isFirstSection = true;
 
   sections.forEach((section) => {
     // Skip empty sections
@@ -197,12 +207,8 @@ export const generateMarkdown = (
 
     if (!hasAnswers) return;
 
-    // Section header (compact)
-    if (!isFirstSection) {
-      md += `\n`;
-    }
-    md += `**${section.title[lang]}**\n`;
-    isFirstSection = false;
+    // Section header
+    html += `<b>${escapeHtml(section.title[lang])}</b>\n`;
 
     section.questions.forEach((question) => {
       const value = formData[question.id];
@@ -211,15 +217,10 @@ export const generateMarkdown = (
       if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
         const label = question.label[lang];
         
-        // Question number and label - start numbering from "digestion" question
-        let questionPrefix = '';
+        // Question number - start numbering from "digestion" question
         if (question.id === 'digestion') {
           digestionQuestionPassed = true;
-          questionPrefix = `${questionNumber}. `;
-          questionNumber++;
-        } else if (digestionQuestionPassed) {
-          questionPrefix = `${questionNumber}. `;
-          questionNumber++;
+          questionNumber = 1;
         }
         
         // Format answer
@@ -234,31 +235,40 @@ export const generateMarkdown = (
           const opt = question.options.find((o) => o.value === value);
           answerText = opt ? opt.label[lang] : value;
         } else {
-          answerText = value;
+          answerText = String(value);
         }
 
-        // Compact format: Question: Answer
-        md += `${questionPrefix}${label}: ${answerText}`;
-        
-        if (additional && additional.trim() !== '') {
-          md += ` (${additional})`;
+        // Question on one line, answer on next line
+        if (digestionQuestionPassed) {
+          html += `${questionNumber}. <b>${escapeHtml(label)}</b>\n`;
+          questionNumber++;
+        } else {
+          html += `<b>${escapeHtml(label)}</b>\n`;
         }
         
-        md += `\n`;
+        html += `${escapeHtml(answerText)}`;
+        
+        // Additional info on same line if present
+        if (additional && additional.trim() !== '') {
+          html += ` <i>(${escapeHtml(additional.trim())})</i>`;
+        }
+        
+        html += `\n`;
       }
     });
   });
 
-  // Contact section (compact)
+  // Contact section
   const cleanUsername = contactData.username.replace(/^@/, '').trim();
   const link = contactData.method === 'telegram'
     ? `https://t.me/${cleanUsername}`
     : `https://instagram.com/${cleanUsername}`;
 
-  md += `\n**${t.mdContacts}**\n`;
-  md += `@${cleanUsername} | ${link}\n`;
+  html += `<b>${escapeHtml(t.mdContacts)}</b>\n`;
+  html += `@${escapeHtml(cleanUsername)}\n`;
+  html += `<a href="${link}">${escapeHtml(link)}</a>`;
 
-  return md;
+  return html;
 };
 
 // Send to Telegram
@@ -335,7 +345,7 @@ Current status:
         body: JSON.stringify({
           chat_id: CHAT_ID,
           text: markdown,
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
         }),
         signal: controller.signal,
       }
