@@ -230,8 +230,8 @@ const Anketa: React.FC = () => {
             </AlertTitle>
             <AlertDescription>
               {language === 'ru' 
-                ? 'Telegram Bot Token или Chat ID не настроены. Пожалуйста, настройте переменные окружения VITE_TELEGRAM_BOT_TOKEN и VITE_TELEGRAM_CHAT_ID в Netlify и пересоберите сайт.'
-                : 'Telegram Bot Token or Chat ID not configured. Please set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID environment variables in Netlify and rebuild the site.'}
+                ? 'Telegram Bot Token или Chat ID не настроены. Пожалуйста, настройте переменные окружения VITE_TELEGRAM_BOT_TOKEN и VITE_TELEGRAM_CHAT_ID в Vercel и пересоберите сайт.'
+                : 'Telegram Bot Token or Chat ID not configured. Please set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID environment variables in Vercel and rebuild the site.'}
             </AlertDescription>
           </Alert>
         )}
