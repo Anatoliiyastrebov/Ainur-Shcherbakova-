@@ -136,6 +136,21 @@ const Anketa: React.FC = () => {
         });
       }
     }
+    // If how_learned changed and "recommendation" is not selected, clear additional field and error
+    if (questionId === 'how_learned') {
+      if (value !== 'recommendation') {
+        setAdditionalData((prev) => {
+          const newData = { ...prev };
+          delete newData['how_learned_additional'];
+          return newData;
+        });
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors['how_learned_additional'];
+          return newErrors;
+        });
+      }
+    }
   };
 
   const handleAdditionalChange = (questionId: string, value: string) => {
