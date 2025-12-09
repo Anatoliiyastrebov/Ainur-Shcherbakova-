@@ -10,8 +10,9 @@ export interface FormAdditionalData {
 }
 
 export interface ContactData {
-  method: 'telegram' | 'instagram' | 'phone';
-  username: string;
+  telegram?: string;
+  instagram?: string;
+  phone?: string;
 }
 
 export interface FormErrors {
@@ -165,9 +166,13 @@ export const validateForm = (
     }
   }
 
-  // Validate contact
-  if (!contactData.username || contactData.username.trim() === '') {
-    errors['contact_username'] = t.required;
+  // Validate contact - at least one method must be filled
+  const hasTelegram = contactData.telegram && contactData.telegram.trim() !== '';
+  const hasInstagram = contactData.instagram && contactData.instagram.trim() !== '';
+  const hasPhone = contactData.phone && contactData.phone.trim() !== '';
+  
+  if (!hasTelegram && !hasInstagram && !hasPhone) {
+    errors['contact_method'] = t.required;
   }
 
   return errors;
@@ -267,35 +272,32 @@ export const generateMarkdown = (
   });
 
   // Contact section
-  const cleanContact = contactData.username.replace(/^@/, '').trim();
-  let contactDisplay = '';
-  let contactLink = '';
-  let contactLinkText = '';
+  const contacts: string[] = [];
   
-  if (contactData.method === 'telegram') {
-    contactDisplay = `@${escapeHtml(cleanContact)}`;
-    contactLink = `https://t.me/${cleanContact}`;
-    contactLinkText = contactLink;
-  } else if (contactData.method === 'instagram') {
-    contactDisplay = `@${escapeHtml(cleanContact)}`;
-    contactLink = `https://instagram.com/${cleanContact}`;
-    contactLinkText = contactLink;
-  } else if (contactData.method === 'phone') {
-    contactDisplay = escapeHtml(cleanContact);
-    contactLink = `tel:${cleanContact}`;
-    contactLinkText = cleanContact; // For phone, show only the number, not "tel:"
+  if (contactData.telegram && contactData.telegram.trim() !== '') {
+    const cleanTelegram = contactData.telegram.replace(/^@/, '').trim();
+    const telegramLink = `https://t.me/${cleanTelegram}`;
+    contacts.push(`Telegram: @${escapeHtml(cleanTelegram)}\n<a href="${telegramLink}">${escapeHtml(telegramLink)}</a>`);
+  }
+  
+  if (contactData.instagram && contactData.instagram.trim() !== '') {
+    const cleanInstagram = contactData.instagram.replace(/^@/, '').trim();
+    const instagramLink = `https://instagram.com/${cleanInstagram}`;
+    contacts.push(`Instagram: @${escapeHtml(cleanInstagram)}\n<a href="${instagramLink}">${escapeHtml(instagramLink)}</a>`);
+  }
+  
+  if (contactData.phone && contactData.phone.trim() !== '') {
+    const cleanPhone = contactData.phone.trim();
+    const phoneLink = `tel:${cleanPhone}`;
+    const phoneLabel = lang === 'ru' ? 'Телефон' : 'Phone';
+    contacts.push(`${phoneLabel}: <a href="${phoneLink}">${escapeHtml(cleanPhone)}</a>`);
   }
 
-  html += `<b>${escapeHtml(t.mdContacts)}</b>\n`;
-  if (contactData.method === 'phone') {
-    // For phone, show number only once with clickable link
-    html += `<a href="${contactLink}">${escapeHtml(contactLinkText)}</a>\n`;
-  } else {
-    // For Telegram/Instagram, show @username and link separately
-    html += `${contactDisplay}\n`;
-    if (contactLink) {
-      html += `<a href="${contactLink}">${escapeHtml(contactLinkText)}</a>\n`;
-    }
+  if (contacts.length > 0) {
+    html += `<b>${escapeHtml(t.mdContacts)}</b>\n`;
+    contacts.forEach((contact) => {
+      html += `${contact}\n`;
+    });
   }
 
   return html;

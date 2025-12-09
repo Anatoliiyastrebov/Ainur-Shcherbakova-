@@ -1,42 +1,40 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MessageCircle, Instagram, Phone, ExternalLink } from 'lucide-react';
 
 interface ContactSectionProps {
-  contactMethod: 'telegram' | 'instagram' | 'phone';
-  username: string;
-  error?: string;
-  onMethodChange: (method: 'telegram' | 'instagram' | 'phone') => void;
-  onUsernameChange: (username: string) => void;
+  contactData: {
+    telegram?: string;
+    instagram?: string;
+    phone?: string;
+  };
+  errors?: {
+    telegram?: string;
+    instagram?: string;
+    phone?: string;
+    contact_method?: string;
+  };
+  onTelegramChange: (value: string) => void;
+  onInstagramChange: (value: string) => void;
+  onPhoneChange: (value: string) => void;
 }
 
 export const ContactSection: React.FC<ContactSectionProps> = ({
-  contactMethod,
-  username,
-  error,
-  onMethodChange,
-  onUsernameChange,
+  contactData,
+  errors = {},
+  onTelegramChange,
+  onInstagramChange,
+  onPhoneChange,
 }) => {
   const { t } = useLanguage();
 
-  const cleanUsername = useMemo(() => {
-    return username.replace(/^@/, '').trim();
-  }, [username]);
+  const cleanTelegram = (contactData.telegram || '').replace(/^@/, '').trim();
+  const cleanInstagram = (contactData.instagram || '').replace(/^@/, '').trim();
+  const cleanPhone = (contactData.phone || '').trim();
 
-  const contactLink = useMemo(() => {
-    if (!cleanUsername) return '';
-    if (contactMethod === 'telegram') {
-      return `https://t.me/${cleanUsername}`;
-    } else if (contactMethod === 'instagram') {
-      return `https://instagram.com/${cleanUsername}`;
-    } else if (contactMethod === 'phone') {
-      return `tel:${cleanUsername}`;
-    }
-    return '';
-  }, [contactMethod, cleanUsername]);
-
-  const fieldLabel = contactMethod === 'phone' ? t('phone') : t('username');
-  const fieldPlaceholder = contactMethod === 'phone' ? t('phoneHint') : t('usernameHint');
+  const telegramLink = cleanTelegram ? `https://t.me/${cleanTelegram}` : '';
+  const instagramLink = cleanInstagram ? `https://instagram.com/${cleanInstagram}` : '';
+  const phoneLink = cleanPhone ? `tel:${cleanPhone}` : '';
 
   return (
     <div className="card-wellness space-y-4">
@@ -45,98 +43,103 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
         {t('contactMethod')}
       </h3>
 
-      <div className="flex gap-3">
-        <label
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all flex-1 justify-center ${
-            contactMethod === 'telegram'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary text-secondary-foreground hover:bg-muted'
-          }`}
-        >
-          <input
-            type="radio"
-            name="contactMethod"
-            value="telegram"
-            checked={contactMethod === 'telegram'}
-            onChange={() => onMethodChange('telegram')}
-            className="sr-only"
-          />
-          <MessageCircle className="w-5 h-5" />
-          <span className="font-medium">{t('telegram')}</span>
-        </label>
+      {errors.contact_method && (
+        <p className="error-message">
+          <AlertCircleIcon />
+          {errors.contact_method}
+        </p>
+      )}
 
-        <label
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all flex-1 justify-center ${
-            contactMethod === 'instagram'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary text-secondary-foreground hover:bg-muted'
-          }`}
-        >
-          <input
-            type="radio"
-            name="contactMethod"
-            value="instagram"
-            checked={contactMethod === 'instagram'}
-            onChange={() => onMethodChange('instagram')}
-            className="sr-only"
-          />
-          <Instagram className="w-5 h-5" />
-          <span className="font-medium">{t('instagram')}</span>
-        </label>
-
-        <label
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all flex-1 justify-center ${
-            contactMethod === 'phone'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary text-secondary-foreground hover:bg-muted'
-          }`}
-        >
-          <input
-            type="radio"
-            name="contactMethod"
-            value="phone"
-            checked={contactMethod === 'phone'}
-            onChange={() => onMethodChange('phone')}
-            className="sr-only"
-          />
-          <Phone className="w-5 h-5" />
-          <span className="font-medium">{t('phone')}</span>
-        </label>
-      </div>
-
+      {/* Telegram */}
       <div>
-        <label className="text-sm text-muted-foreground mb-1 block">
-          {fieldLabel} <span className="text-destructive">*</span>
+        <label className="text-sm font-medium text-foreground mb-1 block flex items-center gap-2">
+          <MessageCircle className="w-4 h-4 text-primary" />
+          {t('telegram')}
         </label>
         <input
-          type={contactMethod === 'phone' ? 'tel' : 'text'}
-          className={`input-field ${error ? 'input-error' : ''}`}
-          value={username}
-          onChange={(e) => onUsernameChange(e.target.value)}
-          placeholder={fieldPlaceholder}
+          type="text"
+          className={`input-field ${errors.telegram ? 'input-error' : ''}`}
+          value={contactData.telegram || ''}
+          onChange={(e) => onTelegramChange(e.target.value)}
+          placeholder={t('usernameHint')}
         />
-        {error && (
+        {errors.telegram && (
           <p className="error-message mt-1">
             <AlertCircleIcon />
-            {error}
+            {errors.telegram}
           </p>
+        )}
+        {cleanTelegram && (
+          <div className="bg-accent/50 rounded-xl p-3 mt-2">
+            <p className="text-sm text-muted-foreground mb-1">{t('contactLink')}</p>
+            <a
+              href={telegramLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary font-medium flex items-center gap-1 hover:underline break-all"
+            >
+              {telegramLink}
+              <ExternalLink className="w-4 h-4 flex-shrink-0" />
+            </a>
+          </div>
         )}
       </div>
 
-      {cleanUsername && contactMethod !== 'phone' && (
-        <div className="bg-accent/50 rounded-xl p-3">
-          <p className="text-sm text-muted-foreground mb-1">{t('contactLink')}</p>
-          <a
-            href={contactLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary font-medium flex items-center gap-1 hover:underline break-all"
-          >
-            {contactLink}
-            <ExternalLink className="w-4 h-4 flex-shrink-0" />
-          </a>
-        </div>
-      )}
+      {/* Instagram */}
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block flex items-center gap-2">
+          <Instagram className="w-4 h-4 text-primary" />
+          {t('instagram')}
+        </label>
+        <input
+          type="text"
+          className={`input-field ${errors.instagram ? 'input-error' : ''}`}
+          value={contactData.instagram || ''}
+          onChange={(e) => onInstagramChange(e.target.value)}
+          placeholder={t('usernameHint')}
+        />
+        {errors.instagram && (
+          <p className="error-message mt-1">
+            <AlertCircleIcon />
+            {errors.instagram}
+          </p>
+        )}
+        {cleanInstagram && (
+          <div className="bg-accent/50 rounded-xl p-3 mt-2">
+            <p className="text-sm text-muted-foreground mb-1">{t('contactLink')}</p>
+            <a
+              href={instagramLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary font-medium flex items-center gap-1 hover:underline break-all"
+            >
+              {instagramLink}
+              <ExternalLink className="w-4 h-4 flex-shrink-0" />
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Phone */}
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block flex items-center gap-2">
+          <Phone className="w-4 h-4 text-primary" />
+          {t('phone')}
+        </label>
+        <input
+          type="tel"
+          className={`input-field ${errors.phone ? 'input-error' : ''}`}
+          value={contactData.phone || ''}
+          onChange={(e) => onPhoneChange(e.target.value)}
+          placeholder={t('phoneHint')}
+        />
+        {errors.phone && (
+          <p className="error-message mt-1">
+            <AlertCircleIcon />
+            {errors.phone}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
