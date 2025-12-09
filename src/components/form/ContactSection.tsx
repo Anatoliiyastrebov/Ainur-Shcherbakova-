@@ -35,12 +35,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     return '';
   }, [contactMethod, cleanUsername]);
 
-  const fieldLabel = contactMethod === 'phone' 
-    ? (t('phone') || 'Телефон') 
-    : t('username');
-  const fieldPlaceholder = contactMethod === 'phone'
-    ? (t('phoneHint') || '+7 (999) 123-45-67')
-    : t('usernameHint');
+  const fieldLabel = contactMethod === 'phone' ? t('phone') : t('username');
+  const fieldPlaceholder = contactMethod === 'phone' ? t('phoneHint') : t('usernameHint');
 
   return (
     <div className="card-wellness space-y-4">
@@ -104,7 +100,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
             className="sr-only"
           />
           <Phone className="w-5 h-5" />
-          <span className="font-medium">{t('phone') || 'Телефон'}</span>
+          <span className="font-medium">{t('phone')}</span>
         </label>
       </div>
 
