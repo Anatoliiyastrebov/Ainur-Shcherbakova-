@@ -286,9 +286,9 @@ const sleepAdultOptions: QuestionOption[] = [
 ];
 
 const weightSatisfactionOptions: QuestionOption[] = [
-  { value: 'yes', label: { ru: 'Да', en: 'Yes' } },
-  { value: 'no_lose', label: { ru: 'Нет, хотелось бы похудеть', en: 'No, would like to lose weight' } },
-  { value: 'no_gain', label: { ru: 'Нет, хотелось бы набрать', en: 'No, would like to gain weight' } },
+  { value: 'no', label: { ru: 'Нет', en: 'No' } },
+  { value: 'yes_lose', label: { ru: 'Да, хотелось бы похудеть', en: 'Yes, would like to lose weight' } },
+  { value: 'yes_gain', label: { ru: 'Да, хотелось бы набрать', en: 'Yes, would like to gain weight' } },
 ];
 
 // Infant questionnaire (type = infant)
