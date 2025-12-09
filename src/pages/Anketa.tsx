@@ -298,9 +298,11 @@ const Anketa: React.FC = () => {
             }}
             onTelegramChange={(value) => {
               setContactData((prev) => ({ ...prev, telegram: value }));
-              if (errors['contact_telegram']) {
+              // Clear contact_method error if any field is filled
+              if (value.trim() !== '' || contactData.instagram?.trim() || contactData.phone?.trim()) {
                 setErrors((prev) => {
                   const newErrors = { ...prev };
+                  delete newErrors['contact_method'];
                   delete newErrors['contact_telegram'];
                   return newErrors;
                 });
@@ -308,9 +310,11 @@ const Anketa: React.FC = () => {
             }}
             onInstagramChange={(value) => {
               setContactData((prev) => ({ ...prev, instagram: value }));
-              if (errors['contact_instagram']) {
+              // Clear contact_method error if any field is filled
+              if (value.trim() !== '' || contactData.telegram?.trim() || contactData.phone?.trim()) {
                 setErrors((prev) => {
                   const newErrors = { ...prev };
+                  delete newErrors['contact_method'];
                   delete newErrors['contact_instagram'];
                   return newErrors;
                 });
@@ -318,9 +322,11 @@ const Anketa: React.FC = () => {
             }}
             onPhoneChange={(value) => {
               setContactData((prev) => ({ ...prev, phone: value }));
-              if (errors['contact_phone']) {
+              // Clear contact_method error if any field is filled
+              if (value.trim() !== '' || contactData.telegram?.trim() || contactData.instagram?.trim()) {
                 setErrors((prev) => {
                   const newErrors = { ...prev };
+                  delete newErrors['contact_method'];
                   delete newErrors['contact_phone'];
                   return newErrors;
                 });
