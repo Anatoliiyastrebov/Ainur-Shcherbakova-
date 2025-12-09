@@ -270,22 +270,32 @@ export const generateMarkdown = (
   const cleanContact = contactData.username.replace(/^@/, '').trim();
   let contactDisplay = '';
   let contactLink = '';
+  let contactLinkText = '';
   
   if (contactData.method === 'telegram') {
     contactDisplay = `@${escapeHtml(cleanContact)}`;
     contactLink = `https://t.me/${cleanContact}`;
+    contactLinkText = contactLink;
   } else if (contactData.method === 'instagram') {
     contactDisplay = `@${escapeHtml(cleanContact)}`;
     contactLink = `https://instagram.com/${cleanContact}`;
+    contactLinkText = contactLink;
   } else if (contactData.method === 'phone') {
     contactDisplay = escapeHtml(cleanContact);
     contactLink = `tel:${cleanContact}`;
+    contactLinkText = cleanContact; // For phone, show only the number, not "tel:"
   }
 
   html += `<b>${escapeHtml(t.mdContacts)}</b>\n`;
-  html += `${contactDisplay}\n`;
-  if (contactLink) {
-    html += `<a href="${contactLink}">${escapeHtml(contactLink)}</a>`;
+  if (contactData.method === 'phone') {
+    // For phone, show number only once with clickable link
+    html += `<a href="${contactLink}">${escapeHtml(contactLinkText)}</a>\n`;
+  } else {
+    // For Telegram/Instagram, show @username and link separately
+    html += `${contactDisplay}\n`;
+    if (contactLink) {
+      html += `<a href="${contactLink}">${escapeHtml(contactLinkText)}</a>\n`;
+    }
   }
 
   return html;
