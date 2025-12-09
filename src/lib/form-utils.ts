@@ -157,6 +157,14 @@ export const validateForm = (
     }
   }
 
+  // Special validation: if how_learned is "recommendation", additional field is required
+  if (formData['how_learned'] === 'recommendation' && additionalData) {
+    const howLearnedAdditional = additionalData['how_learned_additional'];
+    if (!howLearnedAdditional || howLearnedAdditional.trim() === '') {
+      errors['how_learned_additional'] = t.required;
+    }
+  }
+
   // Validate contact
   if (!contactData.username || contactData.username.trim() === '') {
     errors['contact_username'] = t.required;
