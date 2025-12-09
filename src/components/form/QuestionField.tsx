@@ -157,7 +157,8 @@ export const QuestionField: React.FC<QuestionFieldProps> = ({
         </p>
       )}
 
-      {question.hasAdditional && (
+      {question.hasAdditional && 
+       (question.id !== 'how_learned' || value === 'recommendation') && (
         <div className="mt-2">
           <label className="text-sm text-muted-foreground mb-1 block">
             {question.id === 'how_learned' && value === 'recommendation'
