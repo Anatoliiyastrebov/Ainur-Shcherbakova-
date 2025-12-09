@@ -5,37 +5,39 @@ import { Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+const impressumContent = {
+  ru: {
+    title: 'Правовая информация',
+    backToHome: 'Вернуться на главную',
+    impressum: 'Правовая информация',
+    accordingTo: 'Информация согласно § 5 TMG',
+    nameLabel: 'Имя и фамилия:',
+    name: 'Айнур Щербакова',
+    addressLabel: 'Адрес:',
+    address: 'Россия, Воронежская область, г. Воронеж, ул. Ломоносова 114/25, кВ 184',
+    emailLabel: 'Электронная почта:',
+    email: 'ajnur_gasanova@mail.ru',
+    responsibleLabel: 'Ответственный за содержание согласно § 18 Abs. 2 MStV:',
+  },
+  en: {
+    title: 'Legal Information',
+    backToHome: 'Back to home',
+    impressum: 'Impressum',
+    accordingTo: 'Information according to § 5 TMG',
+    nameLabel: 'First and Last Name:',
+    name: 'Ainur Sherbakova',
+    addressLabel: 'Address:',
+    address: 'Russia, Voronezh Region, Voronezh, Lomonosov Street 114/25, Apt. 184',
+    emailLabel: 'E-Mail:',
+    email: 'ajnur_gasanova@mail.ru',
+    responsibleLabel: 'Responsible for content according to § 18 Abs. 2 MStV:',
+  },
+};
+
 const Impressum: React.FC = () => {
   const { language } = useLanguage();
-
-  const impressumContent = {
-    ru: {
-      title: 'Правовая информация',
-      backToHome: 'Вернуться на главную',
-      impressum: 'Правовая информация',
-      accordingTo: 'Информация согласно § 5 TMG',
-      nameLabel: 'Имя и фамилия:',
-      name: 'Айнур Щербакова',
-      addressLabel: 'Адрес:',
-      emailLabel: 'Электронная почта:',
-      responsibleLabel: 'Ответственный за содержание согласно § 18 Abs. 2 MStV:',
-      country: 'Германия',
-    },
-    en: {
-      title: 'Legal Information',
-      backToHome: 'Back to home',
-      impressum: 'Impressum',
-      accordingTo: 'Information according to § 5 TMG',
-      nameLabel: 'First and Last Name:',
-      name: 'Ainur Shcherbakova',
-      addressLabel: 'Address:',
-      emailLabel: 'E-Mail:',
-      responsibleLabel: 'Responsible for content according to § 18 Abs. 2 MStV:',
-      country: 'Germany',
-    },
-  };
-
-  const content = impressumContent[language];
+  const currentLanguage = language || 'ru';
+  const content = impressumContent[currentLanguage] || impressumContent.ru;
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,21 +72,17 @@ const Impressum: React.FC = () => {
 
             <section>
               <h3 className="font-semibold mb-2">{content.addressLabel}</h3>
-              <p>
-                Memelstraße 8<br />
-                51371 Leverkusen<br />
-                {content.country}
-              </p>
+              <p style={{ whiteSpace: 'pre-line' }}>{content.address}</p>
             </section>
 
             <section>
               <h3 className="font-semibold mb-2">{content.emailLabel}</h3>
               <p>
                 <a 
-                  href="mailto:angelyastreb00@gmail.com"
+                  href={`mailto:${content.email}`}
                   className="text-primary hover:underline"
                 >
-                  angelyastreb00@gmail.com
+                  {content.email}
                 </a>
               </p>
             </section>
@@ -95,8 +93,7 @@ const Impressum: React.FC = () => {
               </h3>
               <p>
                 {content.name}<br />
-                Memelstraße 8<br />
-                51371 Leverkusen
+                {content.address}
               </p>
             </section>
           </div>

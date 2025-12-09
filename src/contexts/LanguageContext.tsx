@@ -35,8 +35,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     const urlLang = searchParams.get('lang');
     if (urlLang && ['ru', 'en'].includes(urlLang) && urlLang !== language) {
       setLanguageState(urlLang as Language);
+    } else if (!urlLang) {
+      // Ensure language is set even if not in URL
+      setLanguageState('ru');
     }
-  }, [searchParams]);
+  }, [searchParams, language]);
 
   const t = (key: keyof typeof translations['ru']) => getTranslation(language, key);
 
