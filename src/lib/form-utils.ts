@@ -10,7 +10,7 @@ export interface FormAdditionalData {
 }
 
 export interface ContactData {
-  method: 'telegram' | 'instagram';
+  method: 'telegram' | 'instagram' | 'phone';
   username: string;
 }
 
@@ -267,14 +267,26 @@ export const generateMarkdown = (
   });
 
   // Contact section
-  const cleanUsername = contactData.username.replace(/^@/, '').trim();
-  const link = contactData.method === 'telegram'
-    ? `https://t.me/${cleanUsername}`
-    : `https://instagram.com/${cleanUsername}`;
+  const cleanContact = contactData.username.replace(/^@/, '').trim();
+  let contactDisplay = '';
+  let contactLink = '';
+  
+  if (contactData.method === 'telegram') {
+    contactDisplay = `@${escapeHtml(cleanContact)}`;
+    contactLink = `https://t.me/${cleanContact}`;
+  } else if (contactData.method === 'instagram') {
+    contactDisplay = `@${escapeHtml(cleanContact)}`;
+    contactLink = `https://instagram.com/${cleanContact}`;
+  } else if (contactData.method === 'phone') {
+    contactDisplay = escapeHtml(cleanContact);
+    contactLink = `tel:${cleanContact}`;
+  }
 
   html += `<b>${escapeHtml(t.mdContacts)}</b>\n`;
-  html += `@${escapeHtml(cleanUsername)}\n`;
-  html += `<a href="${link}">${escapeHtml(link)}</a>`;
+  html += `${contactDisplay}\n`;
+  if (contactLink) {
+    html += `<a href="${contactLink}">${escapeHtml(contactLink)}</a>`;
+  }
 
   return html;
 };

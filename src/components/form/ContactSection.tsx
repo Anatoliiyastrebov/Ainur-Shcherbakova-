@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MessageCircle, Instagram, ExternalLink } from 'lucide-react';
+import { MessageCircle, Instagram, Phone, ExternalLink } from 'lucide-react';
 
 interface ContactSectionProps {
-  contactMethod: 'telegram' | 'instagram';
+  contactMethod: 'telegram' | 'instagram' | 'phone';
   username: string;
   error?: string;
-  onMethodChange: (method: 'telegram' | 'instagram') => void;
+  onMethodChange: (method: 'telegram' | 'instagram' | 'phone') => void;
   onUsernameChange: (username: string) => void;
 }
 
@@ -25,10 +25,22 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
   const contactLink = useMemo(() => {
     if (!cleanUsername) return '';
-    return contactMethod === 'telegram'
-      ? `https://t.me/${cleanUsername}`
-      : `https://instagram.com/${cleanUsername}`;
+    if (contactMethod === 'telegram') {
+      return `https://t.me/${cleanUsername}`;
+    } else if (contactMethod === 'instagram') {
+      return `https://instagram.com/${cleanUsername}`;
+    } else if (contactMethod === 'phone') {
+      return `tel:${cleanUsername}`;
+    }
+    return '';
   }, [contactMethod, cleanUsername]);
+
+  const fieldLabel = contactMethod === 'phone' 
+    ? (t('phone') || 'Телефон') 
+    : t('username');
+  const fieldPlaceholder = contactMethod === 'phone'
+    ? (t('phoneHint') || '+7 (999) 123-45-67')
+    : t('usernameHint');
 
   return (
     <div className="card-wellness space-y-4">
@@ -75,18 +87,37 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           <Instagram className="w-5 h-5" />
           <span className="font-medium">{t('instagram')}</span>
         </label>
+
+        <label
+          className={`flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all flex-1 justify-center ${
+            contactMethod === 'phone'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-secondary-foreground hover:bg-muted'
+          }`}
+        >
+          <input
+            type="radio"
+            name="contactMethod"
+            value="phone"
+            checked={contactMethod === 'phone'}
+            onChange={() => onMethodChange('phone')}
+            className="sr-only"
+          />
+          <Phone className="w-5 h-5" />
+          <span className="font-medium">{t('phone') || 'Телефон'}</span>
+        </label>
       </div>
 
       <div>
         <label className="text-sm text-muted-foreground mb-1 block">
-          {t('username')} <span className="text-destructive">*</span>
+          {fieldLabel} <span className="text-destructive">*</span>
         </label>
         <input
-          type="text"
+          type={contactMethod === 'phone' ? 'tel' : 'text'}
           className={`input-field ${error ? 'input-error' : ''}`}
           value={username}
           onChange={(e) => onUsernameChange(e.target.value)}
-          placeholder={t('usernameHint')}
+          placeholder={fieldPlaceholder}
         />
         {error && (
           <p className="error-message mt-1">
@@ -96,7 +127,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
         )}
       </div>
 
-      {cleanUsername && (
+      {cleanUsername && contactMethod !== 'phone' && (
         <div className="bg-accent/50 rounded-xl p-3">
           <p className="text-sm text-muted-foreground mb-1">{t('contactLink')}</p>
           <a

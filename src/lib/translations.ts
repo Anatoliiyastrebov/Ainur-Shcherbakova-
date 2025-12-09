@@ -158,8 +158,10 @@ export const translations = {
     contactMethod: 'Способ связи',
     telegram: 'Telegram',
     instagram: 'Instagram',
+    phone: 'Телефон',
     username: 'Имя пользователя',
     usernameHint: 'Введите без @ или с @',
+    phoneHint: '+7 (999) 123-45-67',
     contactLink: 'Ваша ссылка для связи',
     
     // DSGVO
@@ -349,8 +351,10 @@ export const translations = {
     contactMethod: 'Contact method',
     telegram: 'Telegram',
     instagram: 'Instagram',
+    phone: 'Phone',
     username: 'Username',
     usernameHint: 'Enter with or without @',
+    phoneHint: '+1 (555) 123-4567',
     contactLink: 'Your contact link',
     
     // DSGVO
