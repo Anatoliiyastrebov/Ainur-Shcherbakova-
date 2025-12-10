@@ -39,54 +39,69 @@ const QuestionnaireView: React.FC = () => {
       }
 
       try {
-        // Always try localStorage first (works in both dev and production)
+    // Always try localStorage first (works in both dev and production)
+    try {
+      const stored = localStorage.getItem(`questionnaire_${id}`);
+      if (stored) {
+        const data = JSON.parse(stored);
+        console.log('Loaded questionnaire from localStorage:', { id, hasMessageId: !!data.telegramMessageId, messageId: data.telegramMessageId });
+        setQuestionnaire(data);
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.error('Error loading from localStorage:', err);
+    }
+
+    // If not in localStorage, try API
+    try {
+      const response = await fetch(`/api/get-questionnaire?id=${id}`);
+      
+      if (!response || !response.ok) {
+        // If API fails, try localStorage one more time (fallback)
         try {
           const stored = localStorage.getItem(`questionnaire_${id}`);
           if (stored) {
             const data = JSON.parse(stored);
+            console.log('Loaded questionnaire from localStorage (fallback):', { id, hasMessageId: !!data.telegramMessageId, messageId: data.telegramMessageId });
             setQuestionnaire(data);
             setLoading(false);
             return;
           }
         } catch (err) {
-          console.error('Error loading from localStorage:', err);
+          // Continue to error
         }
-
-        // If not in localStorage, try API
-        const response = await fetch(`/api/get-questionnaire?id=${id}`);
         
-        if (!response || !response.ok) {
-          // If API fails, try localStorage one more time (fallback)
-          try {
-            const stored = localStorage.getItem(`questionnaire_${id}`);
-            if (stored) {
-              const data = JSON.parse(stored);
-              setQuestionnaire(data);
-              setLoading(false);
-              return;
-            }
-          } catch (err) {
-            // Continue to error
-          }
-          
-          setError(language === 'ru' ? 'Анкета не найдена' : 'Questionnaire not found');
-          setLoading(false);
-          return;
-        }
+        setError(language === 'ru' ? 'Анкета не найдена' : 'Questionnaire not found');
+        setLoading(false);
+        return;
+      }
 
-        const data = await response.json();
-        
-        // Save to localStorage for future use
-        if (data.success && data.data) {
-          try {
-            localStorage.setItem(`questionnaire_${id}`, JSON.stringify(data.data));
-          } catch (err) {
-            console.warn('Error saving questionnaire to localStorage:', err);
-          }
-          setQuestionnaire(data.data);
-        } else {
-          setError(language === 'ru' ? 'Анкета не найдена' : 'Questionnaire not found');
+      const text = await response.text();
+      if (!text) {
+        setError(language === 'ru' ? 'Анкета не найдена' : 'Questionnaire not found');
+        setLoading(false);
+        return;
+      }
+
+      const data = JSON.parse(text);
+      
+      // Save to localStorage for future use
+      if (data.success && data.data) {
+        console.log('Loaded questionnaire from API:', { id, hasMessageId: !!data.data.telegramMessageId, messageId: data.data.telegramMessageId });
+        try {
+          localStorage.setItem(`questionnaire_${id}`, JSON.stringify(data.data));
+        } catch (err) {
+          console.warn('Error saving questionnaire to localStorage:', err);
         }
+        setQuestionnaire(data.data);
+      } else {
+        setError(language === 'ru' ? 'Анкета не найдена' : 'Questionnaire not found');
+      }
+    } catch (err: any) {
+      console.error('Error fetching questionnaire from API:', err);
+      setError(err.message || (language === 'ru' ? 'Ошибка загрузки анкеты' : 'Failed to load questionnaire'));
+    }
       } catch (err: any) {
         setError(err.message || 'Failed to load questionnaire');
       } finally {

@@ -653,8 +653,9 @@ Current status:
       };
     }
 
-    console.log('Successfully sent to Telegram');
-    return { success: true };
+    const messageId = responseData.result?.message_id;
+    console.log('Successfully sent to Telegram, message_id:', messageId);
+    return { success: true, messageId: messageId };
   } catch (error: any) {
     if (timeoutId) clearTimeout(timeoutId);
     
