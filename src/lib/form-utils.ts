@@ -312,10 +312,41 @@ export const saveQuestionnaire = async (
   markdown: string,
   language: Language
 ): Promise<{ success: boolean; id?: string; error?: string }> => {
-  // In development, use localStorage as fallback if API is not available
+  // In development, use localStorage directly (API routes don't work in Vite dev server)
   const isDevelopment = import.meta.env.DEV;
-  const isProduction = import.meta.env.PROD;
+  
+  // Always use localStorage in development
+  if (isDevelopment) {
+    try {
+      const id = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const questionnaireData = {
+        id,
+        type,
+        formData,
+        additionalData: additionalData || {},
+        contactData,
+        markdown,
+        createdAt: new Date().toISOString(),
+        language: language || 'ru',
+      };
+      localStorage.setItem(`questionnaire_${id}`, JSON.stringify(questionnaireData));
+      
+      // Save ID to list
+      const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
+      if (!savedIds.includes(id)) {
+        savedIds.push(id);
+        localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(savedIds));
+      }
+      
+      console.log('Questionnaire saved to localStorage in development mode:', id);
+      return { success: true, id };
+    } catch (err) {
+      console.error('Error saving to localStorage:', err);
+      return { success: false, error: 'Failed to save questionnaire' };
+    }
+  }
 
+  // In production, use API
   try {
     const response = await fetch('/api/save-questionnaire', {
       method: 'POST',
@@ -330,47 +361,7 @@ export const saveQuestionnaire = async (
         markdown,
         language,
       }),
-    }).catch((fetchError) => {
-      // If fetch fails (e.g., API not available in dev), use localStorage fallback
-      if (isDevelopment) {
-        console.warn('API not available, using localStorage fallback:', fetchError);
-        return null;
-      }
-      throw fetchError;
     });
-
-    // If response is null (fetch failed in dev), use localStorage
-    if (!response) {
-      if (isDevelopment) {
-        const id = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        try {
-          const questionnaireData = {
-            id,
-            type,
-            formData,
-            additionalData: additionalData || {},
-            contactData,
-            markdown,
-            createdAt: new Date().toISOString(),
-            language: language || 'ru',
-          };
-          localStorage.setItem(`questionnaire_${id}`, JSON.stringify(questionnaireData));
-          
-          // Save ID to list
-          const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
-          if (!savedIds.includes(id)) {
-            savedIds.push(id);
-            localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(savedIds));
-          }
-          
-          return { success: true, id };
-        } catch (err) {
-          console.error('Error saving to localStorage:', err);
-          return { success: false, error: 'Failed to save questionnaire' };
-        }
-      }
-      return { success: false, error: 'API not available' };
-    }
 
     // Check if response has content
     const contentType = response.headers.get('content-type');
