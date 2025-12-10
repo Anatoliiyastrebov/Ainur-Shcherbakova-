@@ -188,8 +188,17 @@ const QuestionnaireView: React.FC = () => {
 
           <div className="border-t pt-6">
             <div 
-              className="prose prose-sm max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: questionnaire.markdown.replace(/\n/g, '<br>') }}
+              className="space-y-4 text-foreground whitespace-pre-wrap font-mono text-sm"
+              dangerouslySetInnerHTML={{ 
+                __html: questionnaire.markdown
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/&lt;b&gt;(.*?)&lt;\/b&gt;/g, '<strong class="font-bold text-foreground">$1</strong>')
+                  .replace(/&lt;i&gt;(.*?)&lt;\/i&gt;/g, '<em class="italic">$1</em>')
+                  .replace(/&lt;a href="(.*?)"&gt;(.*?)&lt;\/a&gt;/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline break-all">$2</a>')
+                  .replace(/\n/g, '<br>')
+              }}
             />
           </div>
         </div>
