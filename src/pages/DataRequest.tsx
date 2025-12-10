@@ -149,23 +149,72 @@ const DataRequest: React.FC = () => {
       return;
     }
 
+    const isDevelopment = import.meta.env.DEV;
+    
+    // Handle local storage IDs in development
+    if (isDevelopment && id.startsWith('local_')) {
+      try {
+        localStorage.removeItem(`questionnaire_${id}`);
+        removeQuestionnaireId(id);
+        toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+        setQuestionnaires(prev => prev.filter(q => q.id !== id));
+        return;
+      } catch (error: any) {
+        toast.error(error.message || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
+        return;
+      }
+    }
+
+    // Try API deletion
     try {
       const response = await fetch(`/api/delete-questionnaire?id=${id}`, {
         method: 'DELETE',
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (!response || !response.ok) {
+        // If API fails but it's a local ID, try localStorage
+        if (isDevelopment) {
+          try {
+            localStorage.removeItem(`questionnaire_${id}`);
+            removeQuestionnaireId(id);
+            toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+            setQuestionnaires(prev => prev.filter(q => q.id !== id));
+            return;
+          } catch (err) {
+            // Continue to error handling
+          }
+        }
+        
+        const text = await response?.text() || '';
+        let data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = {};
+        }
         toast.error(data.error || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
         return;
       }
+
+      const data = await response.json();
 
       toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
       // Remove from list and localStorage
       setQuestionnaires(prev => prev.filter(q => q.id !== id));
       removeQuestionnaireId(id);
     } catch (error: any) {
+      // If fetch fails, try localStorage as fallback
+      if (isDevelopment) {
+        try {
+          localStorage.removeItem(`questionnaire_${id}`);
+          removeQuestionnaireId(id);
+          toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+          setQuestionnaires(prev => prev.filter(q => q.id !== id));
+          return;
+        } catch (err) {
+          // Continue to error handling
+        }
+      }
       toast.error(error.message || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
     }
   };
