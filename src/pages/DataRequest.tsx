@@ -49,26 +49,64 @@ const DataRequest: React.FC = () => {
           return;
         }
 
-        const response = await fetch('/api/get-questionnaires-by-ids', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ids: savedIds }),
-        });
+        // Check if we're in development and have local storage items
+        const isDevelopment = import.meta.env.DEV;
+        let loadedQuestionnaires: QuestionnaireSummary[] = [];
 
-        const data = await response.json();
-        console.log('API response:', data);
-
-        if (!response.ok) {
-          console.error('API error:', data);
-          toast.error(data.error || (language === 'ru' ? 'Ошибка загрузки' : 'Load error'));
-          setQuestionnaires([]);
-          return;
+        if (isDevelopment) {
+          // In dev, try to load from localStorage for local_ prefixed IDs
+          const localIds = savedIds.filter((id: string) => id.startsWith('local_'));
+          localIds.forEach((id: string) => {
+            try {
+              const stored = localStorage.getItem(`questionnaire_${id}`);
+              if (stored) {
+                const data = JSON.parse(stored);
+                loadedQuestionnaires.push({
+                  id: data.id,
+                  type: data.type,
+                  createdAt: data.createdAt,
+                  contactData: data.contactData,
+                });
+              }
+            } catch (err) {
+              console.error('Error loading questionnaire from localStorage:', err);
+            }
+          });
         }
 
-        const loadedQuestionnaires = data.questionnaires || [];
+        // Try to fetch from API for non-local IDs or in production
+        const apiIds = isDevelopment 
+          ? savedIds.filter((id: string) => !id.startsWith('local_'))
+          : savedIds;
+
+        if (apiIds.length > 0) {
+          try {
+            const response = await fetch('/api/get-questionnaires-by-ids', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ids: apiIds }),
+            });
+
+            if (response && response.ok) {
+              const data = await response.json();
+              console.log('API response:', data);
+              if (data.questionnaires) {
+                loadedQuestionnaires.push(...data.questionnaires);
+              }
+            }
+          } catch (apiError) {
+            console.warn('API not available, using only localStorage data:', apiError);
+          }
+        }
+
         console.log('Loaded questionnaires:', loadedQuestionnaires);
+        
+        // Sort by date
+        loadedQuestionnaires.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
         
         // Filter out any IDs that no longer exist (cleanup)
         const foundIds = loadedQuestionnaires.map((q: QuestionnaireSummary) => q.id);

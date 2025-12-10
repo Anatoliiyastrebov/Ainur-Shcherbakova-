@@ -37,15 +37,32 @@ const QuestionnaireView: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`/api/get-questionnaire?id=${id}`);
-        const data = await response.json();
+        // Check if it's a local storage ID (development)
+        const isDevelopment = import.meta.env.DEV;
+        if (isDevelopment && id.startsWith('local_')) {
+          try {
+            const stored = localStorage.getItem(`questionnaire_${id}`);
+            if (stored) {
+              const data = JSON.parse(stored);
+              setQuestionnaire(data);
+              setLoading(false);
+              return;
+            }
+          } catch (err) {
+            console.error('Error loading from localStorage:', err);
+          }
+        }
 
-        if (!response.ok) {
-          setError(data.error || 'Failed to load questionnaire');
+        // Try API
+        const response = await fetch(`/api/get-questionnaire?id=${id}`);
+        
+        if (!response || !response.ok) {
+          setError('Failed to load questionnaire');
           setLoading(false);
           return;
         }
 
+        const data = await response.json();
         setQuestionnaire(data.data);
       } catch (err: any) {
         setError(err.message || 'Failed to load questionnaire');
