@@ -239,12 +239,29 @@ const Anketa: React.FC = () => {
               const data = JSON.parse(stored);
               data.telegramMessageId = telegramResult.messageId;
               localStorage.setItem(`questionnaire_${saveResult.id}`, JSON.stringify(data));
+              console.log('Updated questionnaire with message_id:', telegramResult.messageId);
             }
           } catch (err) {
             console.error('Error updating message_id in localStorage:', err);
           }
+        } else {
+          // In production, update via API
+          try {
+            await fetch('/api/update-questionnaire-message-id', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id: saveResult.id,
+                telegramMessageId: telegramResult.messageId,
+              }),
+            });
+          } catch (err) {
+            console.error('Error updating message_id via API:', err);
+            // Continue anyway - message_id will be handled on delete
+          }
         }
-        // In production, we would need to update via API, but for now we'll handle it on delete
       }
       
       if (telegramResult.success) {
