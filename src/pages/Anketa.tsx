@@ -204,8 +204,19 @@ const Anketa: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // First save the questionnaire to get an ID
-      const saveResult = await saveQuestionnaire(type, formData, additionalData, contactData, markdown, language);
+      // First send to Telegram to get message_id
+      const telegramResult = await sendToTelegram(markdown);
+      
+      // Then save the questionnaire with message_id
+      const saveResult = await saveQuestionnaire(
+        type, 
+        formData, 
+        additionalData, 
+        contactData, 
+        markdown, 
+        language,
+        telegramResult.success ? telegramResult.messageId : undefined
+      );
       
       if (!saveResult.success || !saveResult.id) {
         toast.error(saveResult.error || (language === 'ru' ? 'Ошибка сохранения анкеты' : 'Failed to save questionnaire'));
@@ -223,45 +234,6 @@ const Anketa: React.FC = () => {
         }
       } catch (err) {
         console.error('Error saving questionnaire ID to localStorage:', err);
-      }
-      
-      // Then send to Telegram
-      const telegramResult = await sendToTelegram(markdown);
-      
-      // Update questionnaire with message_id if we have it
-      if (telegramResult.success && telegramResult.messageId && saveResult.id) {
-        // Update saved questionnaire with message_id
-        const isDevelopment = import.meta.env.DEV;
-        if (isDevelopment) {
-          try {
-            const stored = localStorage.getItem(`questionnaire_${saveResult.id}`);
-            if (stored) {
-              const data = JSON.parse(stored);
-              data.telegramMessageId = telegramResult.messageId;
-              localStorage.setItem(`questionnaire_${saveResult.id}`, JSON.stringify(data));
-              console.log('Updated questionnaire with message_id:', telegramResult.messageId);
-            }
-          } catch (err) {
-            console.error('Error updating message_id in localStorage:', err);
-          }
-        } else {
-          // In production, update via API
-          try {
-            await fetch('/api/update-questionnaire-message-id', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                id: saveResult.id,
-                telegramMessageId: telegramResult.messageId,
-              }),
-            });
-          } catch (err) {
-            console.error('Error updating message_id via API:', err);
-            // Continue anyway - message_id will be handled on delete
-          }
-        }
       }
       
       if (telegramResult.success) {
