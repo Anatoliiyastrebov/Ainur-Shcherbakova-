@@ -175,11 +175,34 @@ const DataRequest: React.FC = () => {
     }
 
     // Find questionnaire to get message_id before deletion
-    const questionnaire = questionnaires.find(q => q.id === id);
+    let questionnaire = questionnaires.find(q => q.id === id);
+    
+    // If messageId not found in summary, try to load full questionnaire from localStorage
+    if (!questionnaire?.telegramMessageId) {
+      try {
+        const stored = localStorage.getItem(`questionnaire_${id}`);
+        if (stored) {
+          const data = JSON.parse(stored);
+          questionnaire = {
+            id: data.id,
+            type: data.type,
+            createdAt: data.createdAt,
+            contactData: data.contactData,
+            telegramMessageId: data.telegramMessageId,
+          };
+          console.log('Loaded questionnaire from localStorage for deletion:', questionnaire);
+        }
+      } catch (err) {
+        console.error('Error loading questionnaire from localStorage:', err);
+      }
+    }
+    
     const messageId = questionnaire?.telegramMessageId;
+    console.log('Attempting to delete questionnaire:', { id, messageId, hasQuestionnaire: !!questionnaire });
     
     // Delete from Telegram first if message_id exists
     if (messageId) {
+      console.log('Deleting Telegram message:', messageId);
       try {
         const deleteResult = await deleteTelegramMessage(messageId);
         if (!deleteResult.success) {
@@ -187,17 +210,26 @@ const DataRequest: React.FC = () => {
           // Continue with questionnaire deletion even if Telegram delete fails
           toast.warning(
             language === 'ru' 
-              ? 'Анкета удалена, но сообщение в Telegram может остаться'
-              : 'Questionnaire deleted, but Telegram message may remain',
-            { duration: 3000 }
+              ? 'Анкета удалена, но сообщение в Telegram может остаться: ' + (deleteResult.error || 'Неизвестная ошибка')
+              : 'Questionnaire deleted, but Telegram message may remain: ' + (deleteResult.error || 'Unknown error'),
+            { duration: 5000 }
           );
         } else {
           console.log('Successfully deleted Telegram message:', messageId);
+          toast.success(language === 'ru' ? 'Сообщение в Telegram удалено' : 'Telegram message deleted', { duration: 2000 });
         }
       } catch (error: any) {
         console.error('Error deleting Telegram message:', error);
+        toast.warning(
+          language === 'ru' 
+            ? 'Ошибка при удалении из Telegram: ' + (error.message || 'Неизвестная ошибка')
+            : 'Error deleting from Telegram: ' + (error.message || 'Unknown error'),
+          { duration: 5000 }
+        );
         // Continue with questionnaire deletion
       }
+    } else {
+      console.warn('No telegramMessageId found for questionnaire:', id);
     }
 
     // Delete from localStorage first (works in both dev and production)
