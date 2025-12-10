@@ -319,16 +319,17 @@ export const saveQuestionnaire = async (
   if (isDevelopment) {
     try {
       const id = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const questionnaireData = {
-        id,
-        type,
-        formData,
-        additionalData: additionalData || {},
-        contactData,
-        markdown,
-        createdAt: new Date().toISOString(),
-        language: language || 'ru',
-      };
+        const questionnaireData = {
+          id,
+          type,
+          formData,
+          additionalData: additionalData || {},
+          contactData,
+          markdown,
+          createdAt: new Date().toISOString(),
+          language: language || 'ru',
+          telegramMessageId: telegramMessageId || undefined,
+        };
       localStorage.setItem(`questionnaire_${id}`, JSON.stringify(questionnaireData));
       
       // Save ID to list
@@ -412,7 +413,7 @@ export const saveQuestionnaire = async (
       }
     }
 
-    return { success: true, id: data.id };
+    return { success: true, id: data.id, messageId: data.telegramMessageId };
   } catch (error: any) {
     console.error('Error saving questionnaire:', error);
     return { success: false, error: error.message || 'Failed to save questionnaire' };
@@ -440,11 +441,72 @@ export const removeQuestionnaireId = (id: string) => {
   }
 };
 
+// Delete message from Telegram
+export const deleteTelegramMessage = async (messageId: number): Promise<{ success: boolean; error?: string }> => {
+  const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+
+  if (!BOT_TOKEN || !CHAT_ID || BOT_TOKEN.trim() === '' || CHAT_ID.trim() === '') {
+    console.warn('Telegram credentials not configured, cannot delete message');
+    return { success: false, error: 'Telegram credentials not configured' };
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          message_id: messageId,
+        }),
+      }
+    );
+
+    if (!response || !response.ok) {
+      const text = await response?.text() || '';
+      let responseData;
+      try {
+        responseData = text ? JSON.parse(text) : {};
+      } catch {
+        responseData = {};
+      }
+      const errorMsg = responseData.description || `HTTP ${response?.status}`;
+      console.error('Failed to delete Telegram message:', errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    const text = await response.text();
+    let responseData;
+    try {
+      responseData = text ? JSON.parse(text) : {};
+    } catch (parseError) {
+      console.error('Failed to parse delete message response:', parseError);
+      return { success: false, error: 'Invalid response from Telegram' };
+    }
+
+    if (!responseData.ok) {
+      const errorMsg = responseData.description || 'Unknown error';
+      console.error('Telegram API returned error:', responseData);
+      return { success: false, error: errorMsg };
+    }
+
+    console.log('Successfully deleted Telegram message:', messageId);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting Telegram message:', error);
+    return { success: false, error: error.message || 'Failed to delete message' };
+  }
+};
+
 // Send to Telegram
 // SECURITY NOTE: In production, use environment variables or a server-side proxy
 // Do not expose BOT_TOKEN in client-side code in production!
 // For development: Set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID in .env file
-export const sendToTelegram = async (markdown: string): Promise<{ success: boolean; error?: string }> => {
+export const sendToTelegram = async (markdown: string): Promise<{ success: boolean; messageId?: number; error?: string }> => {
   // Try to get from environment variables first (for Vite: VITE_ prefix)
   const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
   const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;

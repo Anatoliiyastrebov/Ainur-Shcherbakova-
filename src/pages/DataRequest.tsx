@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Home, Loader2, AlertCircle, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { getSavedQuestionnaireIds, removeQuestionnaireId } from '@/lib/form-utils';
+import { getSavedQuestionnaireIds, removeQuestionnaireId, deleteTelegramMessage } from '@/lib/form-utils';
 
 interface QuestionnaireSummary {
   id: string;
@@ -17,6 +17,7 @@ interface QuestionnaireSummary {
     instagram?: string;
     phone?: string;
   };
+  telegramMessageId?: number;
 }
 
 const DataRequest: React.FC = () => {
@@ -93,7 +94,13 @@ const DataRequest: React.FC = () => {
               const data = await response.json();
               console.log('API response:', data);
               if (data.questionnaires) {
-                loadedQuestionnaires.push(...data.questionnaires);
+                loadedQuestionnaires.push(...data.questionnaires.map((q: any) => ({
+                  id: q.id,
+                  type: q.type,
+                  createdAt: q.createdAt,
+                  contactData: q.contactData,
+                  telegramMessageId: q.telegramMessageId,
+                })));
               }
             }
           } catch (apiError) {

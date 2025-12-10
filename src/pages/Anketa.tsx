@@ -228,6 +228,25 @@ const Anketa: React.FC = () => {
       // Then send to Telegram
       const telegramResult = await sendToTelegram(markdown);
       
+      // Update questionnaire with message_id if we have it
+      if (telegramResult.success && telegramResult.messageId && saveResult.id) {
+        // Update saved questionnaire with message_id
+        const isDevelopment = import.meta.env.DEV;
+        if (isDevelopment) {
+          try {
+            const stored = localStorage.getItem(`questionnaire_${saveResult.id}`);
+            if (stored) {
+              const data = JSON.parse(stored);
+              data.telegramMessageId = telegramResult.messageId;
+              localStorage.setItem(`questionnaire_${saveResult.id}`, JSON.stringify(data));
+            }
+          } catch (err) {
+            console.error('Error updating message_id in localStorage:', err);
+          }
+        }
+        // In production, we would need to update via API, but for now we'll handle it on delete
+      }
+      
       if (telegramResult.success) {
         clearFormData(type, language);
         // Navigate to success page with questionnaire ID

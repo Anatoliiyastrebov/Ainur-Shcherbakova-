@@ -24,7 +24,10 @@ export default async function handler(
 
     return res.status(200).json({ 
       success: true, 
-      data: questionnaire 
+      data: {
+        ...questionnaire,
+        telegramMessageId: questionnaire.telegramMessageId,
+      }
     });
   } catch (error: any) {
     console.error('Error getting questionnaire:', error);

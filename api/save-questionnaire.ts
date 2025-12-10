@@ -10,6 +10,7 @@ interface QuestionnaireData {
   markdown: string;
   createdAt: string;
   language: string;
+  telegramMessageId?: number;
 }
 
 // In-memory storage (for development)
@@ -34,7 +35,7 @@ export default async function handler(
   }
 
   try {
-    const { type, formData, additionalData, contactData, markdown, language } = req.body;
+    const { type, formData, additionalData, contactData, markdown, language, telegramMessageId } = req.body;
 
     if (!type || !formData || !contactData || !markdown) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -53,6 +54,7 @@ export default async function handler(
       markdown,
       createdAt: new Date().toISOString(),
       language: language || 'ru',
+      telegramMessageId: telegramMessageId || undefined,
     };
 
     questionnaires.set(id, questionnaire);

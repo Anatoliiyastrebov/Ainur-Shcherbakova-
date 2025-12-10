@@ -40,6 +40,7 @@ export default async function handler(
             instagram: questionnaire.contactData?.instagram,
             phone: questionnaire.contactData?.phone,
           },
+          telegramMessageId: questionnaire.telegramMessageId,
         });
       }
     });

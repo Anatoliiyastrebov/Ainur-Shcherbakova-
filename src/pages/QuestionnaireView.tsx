@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Home, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { deleteTelegramMessage } from '@/lib/form-utils';
 
 interface QuestionnaireData {
   id: string;
@@ -16,6 +17,7 @@ interface QuestionnaireData {
   markdown: string;
   createdAt: string;
   language: string;
+  telegramMessageId?: number;
 }
 
 const QuestionnaireView: React.FC = () => {
@@ -82,18 +84,74 @@ const QuestionnaireView: React.FC = () => {
     }
 
     setDeleting(true);
+    
+    // Delete from Telegram first if message_id exists
+    if (questionnaire?.telegramMessageId) {
+      try {
+        const deleteResult = await deleteTelegramMessage(questionnaire.telegramMessageId);
+        if (!deleteResult.success) {
+          console.warn('Failed to delete Telegram message:', deleteResult.error);
+          // Continue with questionnaire deletion even if Telegram delete fails
+        }
+      } catch (error: any) {
+        console.error('Error deleting Telegram message:', error);
+        // Continue with questionnaire deletion
+      }
+    }
+
     try {
+      // Try API deletion
+      const isDevelopment = import.meta.env.DEV;
+      
+      if (isDevelopment && id.startsWith('local_')) {
+        // Delete from localStorage in development
+        try {
+          localStorage.removeItem(`questionnaire_${id}`);
+          const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
+          const filteredIds = savedIds.filter((savedId: string) => savedId !== id);
+          localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(filteredIds));
+          toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+          navigate(`/?lang=${language}`);
+          return;
+        } catch (err: any) {
+          toast.error(err.message || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
+          return;
+        }
+      }
+
       const response = await fetch(`/api/delete-questionnaire?id=${id}`, {
         method: 'DELETE',
       });
 
-      const data = await response.json();
+      if (!response || !response.ok) {
+        // If API fails but it's a local ID, try localStorage
+        if (isDevelopment && id.startsWith('local_')) {
+          try {
+            localStorage.removeItem(`questionnaire_${id}`);
+            const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
+            const filteredIds = savedIds.filter((savedId: string) => savedId !== id);
+            localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(filteredIds));
+            toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+            navigate(`/?lang=${language}`);
+            return;
+          } catch (err) {
+            // Continue to error handling
+          }
+        }
 
-      if (!response.ok) {
+        const text = await response?.text() || '';
+        let data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = {};
+        }
         toast.error(data.error || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
         setDeleting(false);
         return;
       }
+
+      const data = await response.json();
 
       toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
       navigate(`/?lang=${language}`);
