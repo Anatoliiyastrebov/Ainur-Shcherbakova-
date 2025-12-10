@@ -52,16 +52,18 @@ const DataRequest: React.FC = () => {
     setSearched(true);
 
     try {
+      // Prepare search data - send empty strings as undefined
+      const searchData: { telegram?: string; instagram?: string; phone?: string } = {};
+      if (telegram.trim()) searchData.telegram = telegram.trim();
+      if (instagram.trim()) searchData.instagram = instagram.trim();
+      if (phone.trim()) searchData.phone = phone.trim();
+
       const response = await fetch('/api/search-questionnaires', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          telegram: telegram.trim() || undefined,
-          instagram: instagram.trim() || undefined,
-          phone: phone.trim() || undefined,
-        }),
+        body: JSON.stringify(searchData),
       });
 
       const data = await response.json();
