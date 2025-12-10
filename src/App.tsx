@@ -9,6 +9,7 @@ import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
 import Impressum from "./pages/Impressum";
 import QuestionnaireView from "./pages/QuestionnaireView";
+import DataRequest from "./pages/DataRequest";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/anketa" element={<Anketa />} />
             <Route path="/success" element={<Success />} />
             <Route path="/questionnaire/:id" element={<QuestionnaireView />} />
+            <Route path="/data-request" element={<DataRequest />} />
             <Route path="/impressum" element={<Impressum />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

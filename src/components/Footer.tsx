@@ -14,6 +14,12 @@ export const Footer: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              to="/data-request"
+              className="hover:text-foreground transition-colors"
+            >
+              {language === 'ru' ? 'Запрос данных' : 'Data Request'}
+            </Link>
+            <Link
               to="/impressum"
               className="hover:text-foreground transition-colors"
             >
