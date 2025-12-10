@@ -31,7 +31,7 @@ export default async function handler(
       return res.status(404).json({ error: 'Questionnaire not found' });
     }
 
-    // Delete from Telegram if message_id exists
+    // Delete from Telegram if message_id exists (backup if client-side deletion failed)
     const messageId = questionnaire.telegramMessageId;
     if (messageId) {
       const BOT_TOKEN = process.env.VITE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
@@ -39,6 +39,7 @@ export default async function handler(
 
       if (BOT_TOKEN && CHAT_ID) {
         try {
+          console.log(`Attempting to delete Telegram message ${messageId} for questionnaire ${id}`);
           const telegramResponse = await fetch(
             `https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`,
             {
@@ -54,17 +55,26 @@ export default async function handler(
           );
 
           if (telegramResponse.ok) {
-            console.log(`Successfully deleted Telegram message ${messageId} for questionnaire ${id}`);
+            const result = await telegramResponse.json();
+            if (result.ok) {
+              console.log(`Successfully deleted Telegram message ${messageId} for questionnaire ${id}`);
+            } else {
+              console.warn(`Telegram API returned error for message ${messageId}:`, result.description || 'Unknown error');
+            }
           } else {
             const errorData = await telegramResponse.json().catch(() => ({}));
-            console.warn(`Failed to delete Telegram message ${messageId}:`, errorData);
+            console.warn(`Failed to delete Telegram message ${messageId}:`, errorData.description || errorData);
             // Continue with questionnaire deletion even if Telegram delete fails
           }
-        } catch (telegramError) {
-          console.error('Error deleting Telegram message:', telegramError);
+        } catch (telegramError: any) {
+          console.error('Error deleting Telegram message:', telegramError.message || telegramError);
           // Continue with questionnaire deletion even if Telegram delete fails
         }
+      } else {
+        console.warn('Telegram credentials not configured, cannot delete message');
       }
+    } else {
+      console.log(`No telegramMessageId found for questionnaire ${id}`);
     }
 
     questionnaires.delete(id);

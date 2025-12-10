@@ -107,17 +107,35 @@ const QuestionnaireView: React.FC = () => {
     setDeleting(true);
     
     // Delete from Telegram first if message_id exists
-    if (questionnaire?.telegramMessageId) {
+    const messageId = questionnaire?.telegramMessageId;
+    if (messageId) {
+      console.log('Attempting to delete Telegram message:', messageId);
       try {
-        const deleteResult = await deleteTelegramMessage(questionnaire.telegramMessageId);
+        const deleteResult = await deleteTelegramMessage(messageId);
         if (!deleteResult.success) {
           console.warn('Failed to delete Telegram message:', deleteResult.error);
-          // Continue with questionnaire deletion even if Telegram delete fails
+          toast.warning(
+            language === 'ru' 
+              ? 'Анкета будет удалена, но сообщение в Telegram может остаться: ' + (deleteResult.error || 'Неизвестная ошибка')
+              : 'Questionnaire will be deleted, but Telegram message may remain: ' + (deleteResult.error || 'Unknown error'),
+            { duration: 3000 }
+          );
+        } else {
+          console.log('Successfully deleted Telegram message:', messageId);
+          toast.success(language === 'ru' ? 'Сообщение в Telegram удалено' : 'Telegram message deleted', { duration: 2000 });
         }
       } catch (error: any) {
         console.error('Error deleting Telegram message:', error);
+        toast.warning(
+          language === 'ru' 
+            ? 'Ошибка при удалении из Telegram, но анкета будет удалена: ' + (error.message || 'Неизвестная ошибка')
+            : 'Error deleting from Telegram, but questionnaire will be deleted: ' + (error.message || 'Unknown error'),
+          { duration: 3000 }
+        );
         // Continue with questionnaire deletion
       }
+    } else {
+      console.warn('No telegramMessageId found for questionnaire:', id);
     }
 
     try {
