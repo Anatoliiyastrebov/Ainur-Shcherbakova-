@@ -39,9 +39,24 @@ const QuestionnaireView: React.FC = () => {
       }
 
       try {
-        // Check if it's a local storage ID (development)
-        const isDevelopment = import.meta.env.DEV;
-        if (isDevelopment && id.startsWith('local_')) {
+        // Always try localStorage first (works in both dev and production)
+        try {
+          const stored = localStorage.getItem(`questionnaire_${id}`);
+          if (stored) {
+            const data = JSON.parse(stored);
+            setQuestionnaire(data);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.error('Error loading from localStorage:', err);
+        }
+
+        // If not in localStorage, try API
+        const response = await fetch(`/api/get-questionnaire?id=${id}`);
+        
+        if (!response || !response.ok) {
+          // If API fails, try localStorage one more time (fallback)
           try {
             const stored = localStorage.getItem(`questionnaire_${id}`);
             if (stored) {
@@ -51,21 +66,27 @@ const QuestionnaireView: React.FC = () => {
               return;
             }
           } catch (err) {
-            console.error('Error loading from localStorage:', err);
+            // Continue to error
           }
-        }
-
-        // Try API
-        const response = await fetch(`/api/get-questionnaire?id=${id}`);
-        
-        if (!response || !response.ok) {
-          setError('Failed to load questionnaire');
+          
+          setError(language === 'ru' ? 'Анкета не найдена' : 'Questionnaire not found');
           setLoading(false);
           return;
         }
 
         const data = await response.json();
-        setQuestionnaire(data.data);
+        
+        // Save to localStorage for future use
+        if (data.success && data.data) {
+          try {
+            localStorage.setItem(`questionnaire_${id}`, JSON.stringify(data.data));
+          } catch (err) {
+            console.warn('Error saving questionnaire to localStorage:', err);
+          }
+          setQuestionnaire(data.data);
+        } else {
+          setError(language === 'ru' ? 'Анкета не найдена' : 'Questionnaire not found');
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to load questionnaire');
       } finally {
