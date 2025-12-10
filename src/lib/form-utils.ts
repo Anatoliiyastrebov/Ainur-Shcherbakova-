@@ -460,63 +460,59 @@ export const removeQuestionnaireId = (id: string) => {
   }
 };
 
-// Delete message from Telegram
+// Delete message from Telegram via API endpoint (server-side)
 export const deleteTelegramMessage = async (messageId: number): Promise<{ success: boolean; error?: string }> => {
-  const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
-  const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
-
-  if (!BOT_TOKEN || !CHAT_ID || BOT_TOKEN.trim() === '' || CHAT_ID.trim() === '') {
-    console.warn('Telegram credentials not configured, cannot delete message');
-    return { success: false, error: 'Telegram credentials not configured' };
-  }
-
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          message_id: messageId,
-        }),
-      }
-    );
+    const response = await fetch('/api/delete-telegram-message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messageId: messageId,
+      }),
+    });
 
-    if (!response || !response.ok) {
-      const text = await response?.text() || '';
-      let responseData;
-      try {
-        responseData = text ? JSON.parse(text) : {};
-      } catch {
-        responseData = {};
-      }
-      const errorMsg = responseData.description || `HTTP ${response?.status}`;
-      console.error('Failed to delete Telegram message:', errorMsg);
-      return { success: false, error: errorMsg };
+    if (!response) {
+      console.error('No response from delete-telegram-message API');
+      return { success: false, error: 'No response from server' };
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response from delete-telegram-message API:', text);
+      return { success: false, error: 'Invalid response from server' };
     }
 
     const text = await response.text();
-    let responseData;
+    if (!text || text.trim() === '') {
+      console.error('Empty response from delete-telegram-message API');
+      return { success: false, error: 'Empty response from server' };
+    }
+
+    let data;
     try {
-      responseData = text ? JSON.parse(text) : {};
+      data = JSON.parse(text);
     } catch (parseError) {
-      console.error('Failed to parse delete message response:', parseError);
-      return { success: false, error: 'Invalid response from Telegram' };
+      console.error('Failed to parse delete-telegram-message response:', parseError, 'Response:', text);
+      return { success: false, error: 'Invalid JSON response from server' };
     }
 
-    if (!responseData.ok) {
-      const errorMsg = responseData.description || 'Unknown error';
-      console.error('Telegram API returned error:', responseData);
-      return { success: false, error: errorMsg };
+    if (!response.ok) {
+      console.error('delete-telegram-message API error:', data.error || 'Unknown error');
+      return { success: false, error: data.error || `HTTP ${response.status}` };
     }
 
-    console.log('Successfully deleted Telegram message:', messageId);
+    if (!data.success) {
+      console.error('Telegram message deletion failed:', data.error || 'Unknown error');
+      return { success: false, error: data.error || 'Failed to delete message' };
+    }
+
+    console.log('Successfully deleted Telegram message via API:', messageId);
     return { success: true };
   } catch (error: any) {
-    console.error('Error deleting Telegram message:', error);
+    console.error('Error calling delete-telegram-message API:', error);
     return { success: false, error: error.message || 'Failed to delete message' };
   }
 };
