@@ -174,20 +174,45 @@ const DataRequest: React.FC = () => {
       return;
     }
 
-    const isDevelopment = import.meta.env.DEV;
+    // Find questionnaire to get message_id before deletion
+    const questionnaire = questionnaires.find(q => q.id === id);
+    const messageId = questionnaire?.telegramMessageId;
     
-    // Handle local storage IDs in development
-    if (isDevelopment && id.startsWith('local_')) {
+    // Delete from Telegram first if message_id exists
+    if (messageId) {
       try {
-        localStorage.removeItem(`questionnaire_${id}`);
-        removeQuestionnaireId(id);
-        toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
-        setQuestionnaires(prev => prev.filter(q => q.id !== id));
-        return;
+        const deleteResult = await deleteTelegramMessage(messageId);
+        if (!deleteResult.success) {
+          console.warn('Failed to delete Telegram message:', deleteResult.error);
+          // Continue with questionnaire deletion even if Telegram delete fails
+          toast.warning(
+            language === 'ru' 
+              ? 'Анкета удалена, но сообщение в Telegram может остаться'
+              : 'Questionnaire deleted, but Telegram message may remain',
+            { duration: 3000 }
+          );
+        } else {
+          console.log('Successfully deleted Telegram message:', messageId);
+        }
       } catch (error: any) {
-        toast.error(error.message || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
-        return;
+        console.error('Error deleting Telegram message:', error);
+        // Continue with questionnaire deletion
       }
+    }
+
+    // Delete from localStorage first (works in both dev and production)
+    try {
+      localStorage.removeItem(`questionnaire_${id}`);
+      removeQuestionnaireId(id);
+    } catch (err) {
+      console.warn('Error removing from localStorage:', err);
+    }
+    
+    // If it's a local_ ID, we're done (development mode)
+    if (id.startsWith('local_')) {
+      toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+      setQuestionnaires(prev => prev.filter(q => q.id !== id));
+      return;
     }
 
     // Try API deletion
@@ -196,7 +221,7 @@ const DataRequest: React.FC = () => {
         method: 'DELETE',
       });
 
-      // Even if API call fails, we've already removed from localStorage
+      // Even if API call fails, we've already removed from localStorage and Telegram
       // So we can show success message
       if (!response || !response.ok) {
         const text = await response?.text() || '';
@@ -207,23 +232,23 @@ const DataRequest: React.FC = () => {
           data = {};
         }
         
-        // If localStorage removal was successful, show success even if API failed
+        // localStorage and Telegram already handled, show success
         toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
         setQuestionnaires(prev => prev.filter(q => q.id !== id));
-        console.warn('API deletion failed, but removed from localStorage:', data.error || 'Unknown error');
+        console.warn('API deletion failed, but removed from localStorage and Telegram:', data.error || 'Unknown error');
         return;
       }
 
       const data = await response.json();
 
       toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
-      // Remove from list (localStorage already removed above)
+      // Remove from list (localStorage and Telegram already handled above)
       setQuestionnaires(prev => prev.filter(q => q.id !== id));
     } catch (error: any) {
-      // localStorage already removed above, so show success even if API fails
+      // localStorage and Telegram already handled, show success
       toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
       setQuestionnaires(prev => prev.filter(q => q.id !== id));
-      console.warn('API deletion error, but removed from localStorage:', error.message);
+      console.warn('API deletion error, but removed from localStorage and Telegram:', error.message);
     }
   };
 
