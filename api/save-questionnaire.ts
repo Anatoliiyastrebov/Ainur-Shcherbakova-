@@ -62,6 +62,7 @@ export default async function handler(
     return res.status(200).json({ 
       success: true, 
       id,
+      telegramMessageId: questionnaire.telegramMessageId,
       message: 'Questionnaire saved successfully'
     });
   } catch (error: any) {
