@@ -216,68 +216,89 @@ const DataRequest: React.FC = () => {
             </Button>
           </form>
 
-          {searched && questionnaires.length === 0 && !loading && (
-            <div className="text-center py-8">
-              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                {language === 'ru' 
-                  ? 'Анкеты не найдены. Проверьте введенные данные.'
-                  : 'No questionnaires found. Please check your contact information.'}
-              </p>
-            </div>
-          )}
-
-          {questionnaires.length > 0 && (
-            <div className="space-y-4 mt-6">
-              <h2 className="text-xl font-semibold text-foreground">
-                {language === 'ru' 
-                  ? `Найдено анкет: ${questionnaires.length}`
-                  : `Found ${questionnaires.length} questionnaire${questionnaires.length !== 1 ? 's' : ''}`}
-              </h2>
-
-              {questionnaires.map((q) => {
-                const typeName = getQuestionnaireTypeName(q.type);
-                return (
-                  <div
-                    key={q.id}
-                    className="border border-border rounded-lg p-4 space-y-3"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">
-                          {typeName[language]}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {language === 'ru' ? 'Отправлена:' : 'Submitted:'} {formatDate(q.createdAt)}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/questionnaire/${q.id}?lang=${language}`)}
-                          className="flex items-center gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          {language === 'ru' ? 'Просмотр' : 'View'}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(q.id)}
-                          className="flex items-center gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          {language === 'ru' ? 'Удалить' : 'Delete'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
+
+        {/* Results Section - Separate card */}
+        {searched && (
+          <div className="card-wellness space-y-4 mt-6">
+            <h2 className="text-2xl font-bold text-foreground">
+              {language === 'ru' ? 'Мои отправленные анкеты' : 'My Submitted Questionnaires'}
+            </h2>
+
+            {loading && (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  {language === 'ru' ? 'Поиск анкет...' : 'Searching questionnaires...'}
+                </p>
+              </div>
+            )}
+
+            {!loading && questionnaires.length === 0 && (
+              <div className="text-center py-8">
+                <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  {language === 'ru' 
+                    ? 'Анкеты не найдены. Проверьте введенные данные.'
+                    : 'No questionnaires found. Please check your contact information.'}
+                </p>
+              </div>
+            )}
+
+            {!loading && questionnaires.length > 0 && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {language === 'ru' 
+                    ? `Найдено анкет: ${questionnaires.length}`
+                    : `Found ${questionnaires.length} questionnaire${questionnaires.length !== 1 ? 's' : ''}`}
+                </p>
+
+                <div className="space-y-3">
+                  {questionnaires.map((q) => {
+                    const typeName = getQuestionnaireTypeName(q.type);
+                    return (
+                      <div
+                        key={q.id}
+                        className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors bg-card"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-foreground mb-1">
+                              {typeName[language]}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {language === 'ru' ? 'Отправлена:' : 'Submitted:'} {formatDate(q.createdAt)}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/questionnaire/${q.id}?lang=${language}`)}
+                              className="flex items-center gap-2"
+                            >
+                              <Eye className="w-4 h-4" />
+                              {language === 'ru' ? 'Просмотр' : 'View'}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(q.id)}
+                              className="flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {language === 'ru' ? 'Удалить' : 'Delete'}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
       
       <Footer />
