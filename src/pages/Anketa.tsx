@@ -24,6 +24,7 @@ import {
   loadFormData,
   clearFormData,
   sendToTelegram,
+  saveQuestionnaire,
 } from '@/lib/form-utils';
 import { Eye, Send, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -203,14 +204,23 @@ const Anketa: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await sendToTelegram(markdown);
+      // First save the questionnaire to get an ID
+      const saveResult = await saveQuestionnaire(type, formData, additionalData, contactData, markdown, language);
       
-      if (result.success) {
+      // Then send to Telegram
+      const telegramResult = await sendToTelegram(markdown);
+      
+      if (telegramResult.success) {
         clearFormData(type, language);
-        navigate(`/success?lang=${language}`);
+        // Navigate to success page with questionnaire ID
+        const queryParams = new URLSearchParams({ lang: language });
+        if (saveResult.id) {
+          queryParams.set('id', saveResult.id);
+        }
+        navigate(`/success?${queryParams.toString()}`);
       } else {
         // Show detailed error message
-        const errorMsg = result.error || t('submitError');
+        const errorMsg = telegramResult.error || t('submitError');
         console.error('Failed to send form:', errorMsg);
         toast.error(errorMsg, {
           duration: 5000,

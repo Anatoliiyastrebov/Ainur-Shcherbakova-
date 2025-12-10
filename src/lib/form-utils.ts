@@ -303,6 +303,44 @@ export const generateMarkdown = (
   return html;
 };
 
+// Save questionnaire to backend
+export const saveQuestionnaire = async (
+  type: QuestionnaireType,
+  formData: FormData,
+  additionalData: FormAdditionalData,
+  contactData: ContactData,
+  markdown: string,
+  language: Language
+): Promise<{ success: boolean; id?: string; error?: string }> => {
+  try {
+    const response = await fetch('/api/save-questionnaire', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type,
+        formData,
+        additionalData,
+        contactData,
+        markdown,
+        language,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Failed to save questionnaire' };
+    }
+
+    return { success: true, id: data.id };
+  } catch (error: any) {
+    console.error('Error saving questionnaire:', error);
+    return { success: false, error: error.message || 'Failed to save questionnaire' };
+  }
+};
+
 // Send to Telegram
 // SECURITY NOTE: In production, use environment variables or a server-side proxy
 // Do not expose BOT_TOKEN in client-side code in production!
