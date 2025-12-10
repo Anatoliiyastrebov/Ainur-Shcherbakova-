@@ -8,7 +8,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "git add -A && git commit -m \"Auto-deploy: $(date +'%Y-%m-%d %H:%M:%S')\" && git push origin main",
+    "git:push": "git add -A && git commit -m \"Auto-update: $(date +'%Y-%m-%d %H:%M:%S')\" && git push origin main"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
