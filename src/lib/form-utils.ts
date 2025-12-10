@@ -310,7 +310,8 @@ export const saveQuestionnaire = async (
   additionalData: FormAdditionalData,
   contactData: ContactData,
   markdown: string,
-  language: Language
+  language: Language,
+  telegramMessageId?: number
 ): Promise<{ success: boolean; id?: string; error?: string }> => {
   // In development, use localStorage directly (API routes don't work in Vite dev server)
   const isDevelopment = import.meta.env.DEV;
