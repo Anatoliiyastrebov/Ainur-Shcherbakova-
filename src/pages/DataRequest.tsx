@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Home, Search, Loader2, AlertCircle, Trash2, Eye } from 'lucide-react';
+import { Home, Loader2, AlertCircle, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { getSavedQuestionnaireIds, removeQuestionnaireId } from '@/lib/form-utils';
 
 interface QuestionnaireSummary {
   id: string;
@@ -21,12 +22,8 @@ interface QuestionnaireSummary {
 const DataRequest: React.FC = () => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const [telegram, setTelegram] = useState('');
-  const [instagram, setInstagram] = useState('');
-  const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [questionnaires, setQuestionnaires] = useState<QuestionnaireSummary[]>([]);
-  const [searched, setSearched] = useState(false);
 
   const getQuestionnaireTypeName = (type: string) => {
     const names: Record<string, { ru: string; en: string }> = {
@@ -38,57 +35,47 @@ const DataRequest: React.FC = () => {
     return names[type] || { ru: type, en: type };
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Load questionnaires on mount
+  useEffect(() => {
+    const loadQuestionnaires = async () => {
+      setLoading(true);
+      try {
+        const savedIds = getSavedQuestionnaireIds();
+        
+        if (savedIds.length === 0) {
+          setQuestionnaires([]);
+          setLoading(false);
+          return;
+        }
 
-    if (!telegram && !instagram && !phone) {
-      toast.error(language === 'ru' 
-        ? 'Укажите хотя бы один способ связи' 
-        : 'Please provide at least one contact method');
-      return;
-    }
+        const response = await fetch('/api/get-questionnaires-by-ids', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids: savedIds }),
+        });
 
-    setLoading(true);
-    setSearched(true);
+        const data = await response.json();
 
-    try {
-      // Prepare search data - send empty strings as undefined
-      const searchData: { telegram?: string; instagram?: string; phone?: string } = {};
-      if (telegram.trim()) searchData.telegram = telegram.trim();
-      if (instagram.trim()) searchData.instagram = instagram.trim();
-      if (phone.trim()) searchData.phone = phone.trim();
+        if (!response.ok) {
+          toast.error(data.error || (language === 'ru' ? 'Ошибка загрузки' : 'Load error'));
+          setQuestionnaires([]);
+          return;
+        }
 
-      const response = await fetch('/api/search-questionnaires', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(searchData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.error || (language === 'ru' ? 'Ошибка поиска' : 'Search error'));
+        setQuestionnaires(data.questionnaires || []);
+      } catch (error: any) {
+        console.error('Load error:', error);
+        toast.error(error.message || (language === 'ru' ? 'Ошибка загрузки' : 'Load error'));
         setQuestionnaires([]);
-        return;
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setQuestionnaires(data.questionnaires || []);
-      
-      if (data.count === 0) {
-        toast.info(language === 'ru' 
-          ? 'Анкеты не найдены' 
-          : 'No questionnaires found');
-      }
-    } catch (error: any) {
-      console.error('Search error:', error);
-      toast.error(error.message || (language === 'ru' ? 'Ошибка поиска' : 'Search error'));
-      setQuestionnaires([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadQuestionnaires();
+  }, [language]);
 
   const handleDelete = async (id: string) => {
     if (!confirm(language === 'ru' 
@@ -110,8 +97,9 @@ const DataRequest: React.FC = () => {
       }
 
       toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
-      // Remove from list
+      // Remove from list and localStorage
       setQuestionnaires(prev => prev.filter(q => q.id !== id));
+      removeQuestionnaireId(id);
     } catch (error: any) {
       toast.error(error.message || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
     }
@@ -148,157 +136,88 @@ const DataRequest: React.FC = () => {
         <div className="card-wellness space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {language === 'ru' ? 'Запрос данных' : 'Data Request'}
+              {language === 'ru' ? 'Мои отправленные анкеты' : 'My Submitted Questionnaires'}
             </h1>
             <p className="text-muted-foreground">
               {language === 'ru' 
-                ? 'Введите ваши контактные данные, чтобы найти все отправленные анкеты'
-                : 'Enter your contact information to find all submitted questionnaires'}
+                ? 'Здесь отображаются все отправленные вами анкеты'
+                : 'All your submitted questionnaires are displayed here'}
             </p>
           </div>
 
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">
-                Telegram {language === 'ru' ? '(необязательно)' : '(optional)'}
-              </label>
-              <input
-                type="text"
-                className="input-field"
-                value={telegram}
-                onChange={(e) => setTelegram(e.target.value)}
-                placeholder="@username"
-              />
+          {loading && (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                {language === 'ru' ? 'Загрузка анкет...' : 'Loading questionnaires...'}
+              </p>
             </div>
+          )}
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">
-                Instagram {language === 'ru' ? '(необязательно)' : '(optional)'}
-              </label>
-              <input
-                type="text"
-                className="input-field"
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                placeholder="@username"
-              />
+          {!loading && questionnaires.length === 0 && (
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                {language === 'ru' 
+                  ? 'У вас пока нет отправленных анкет'
+                  : 'You have no submitted questionnaires yet'}
+              </p>
             </div>
+          )}
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">
-                {language === 'ru' ? 'Телефон' : 'Phone'} {language === 'ru' ? '(необязательно)' : '(optional)'}
-              </label>
-              <input
-                type="tel"
-                className="input-field"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+7 (999) 123-45-67"
-              />
-            </div>
+          {!loading && questionnaires.length > 0 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {language === 'ru' 
+                  ? `Всего анкет: ${questionnaires.length}`
+                  : `Total questionnaires: ${questionnaires.length}`}
+              </p>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {language === 'ru' ? 'Поиск...' : 'Searching...'}
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4 mr-2" />
-                  {language === 'ru' ? 'Найти анкеты' : 'Find questionnaires'}
-                </>
-              )}
-            </Button>
-          </form>
-
-        </div>
-
-        {/* Results Section - Separate card */}
-        {searched && (
-          <div className="card-wellness space-y-4 mt-6">
-            <h2 className="text-2xl font-bold text-foreground">
-              {language === 'ru' ? 'Мои отправленные анкеты' : 'My Submitted Questionnaires'}
-            </h2>
-
-            {loading && (
-              <div className="text-center py-8">
-                <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  {language === 'ru' ? 'Поиск анкет...' : 'Searching questionnaires...'}
-                </p>
-              </div>
-            )}
-
-            {!loading && questionnaires.length === 0 && (
-              <div className="text-center py-8">
-                <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  {language === 'ru' 
-                    ? 'Анкеты не найдены. Проверьте введенные данные.'
-                    : 'No questionnaires found. Please check your contact information.'}
-                </p>
-              </div>
-            )}
-
-            {!loading && questionnaires.length > 0 && (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {language === 'ru' 
-                    ? `Найдено анкет: ${questionnaires.length}`
-                    : `Found ${questionnaires.length} questionnaire${questionnaires.length !== 1 ? 's' : ''}`}
-                </p>
-
-                <div className="space-y-3">
-                  {questionnaires.map((q) => {
-                    const typeName = getQuestionnaireTypeName(q.type);
-                    return (
-                      <div
-                        key={q.id}
-                        className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors bg-card"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-foreground mb-1">
-                              {typeName[language]}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {language === 'ru' ? 'Отправлена:' : 'Submitted:'} {formatDate(q.createdAt)}
-                            </p>
-                          </div>
-                          <div className="flex gap-2 flex-shrink-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/questionnaire/${q.id}?lang=${language}`)}
-                              className="flex items-center gap-2"
-                            >
-                              <Eye className="w-4 h-4" />
-                              {language === 'ru' ? 'Просмотр' : 'View'}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(q.id)}
-                              className="flex items-center gap-2"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              {language === 'ru' ? 'Удалить' : 'Delete'}
-                            </Button>
-                          </div>
+              <div className="space-y-3">
+                {questionnaires.map((q) => {
+                  const typeName = getQuestionnaireTypeName(q.type);
+                  return (
+                    <div
+                      key={q.id}
+                      className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors bg-card"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground mb-1">
+                            {typeName[language]}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {language === 'ru' ? 'Отправлена:' : 'Submitted:'} {formatDate(q.createdAt)}
+                          </p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/questionnaire/${q.id}?lang=${language}`)}
+                            className="flex items-center gap-2"
+                          >
+                            <Eye className="w-4 h-4" />
+                            {language === 'ru' ? 'Просмотр' : 'View'}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(q.id)}
+                            className="flex items-center gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            {language === 'ru' ? 'Удалить' : 'Delete'}
+                          </Button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </main>
       
       <Footer />

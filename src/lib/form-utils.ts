@@ -334,10 +334,44 @@ export const saveQuestionnaire = async (
       return { success: false, error: data.error || 'Failed to save questionnaire' };
     }
 
+    // Save questionnaire ID to localStorage
+    if (data.id) {
+      try {
+        const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
+        if (!savedIds.includes(data.id)) {
+          savedIds.push(data.id);
+          localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(savedIds));
+        }
+      } catch (err) {
+        console.error('Error saving questionnaire ID to localStorage:', err);
+      }
+    }
+
     return { success: true, id: data.id };
   } catch (error: any) {
     console.error('Error saving questionnaire:', error);
     return { success: false, error: error.message || 'Failed to save questionnaire' };
+  }
+};
+
+// Get all questionnaire IDs from localStorage
+export const getSavedQuestionnaireIds = (): string[] => {
+  try {
+    return JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
+  } catch (err) {
+    console.error('Error loading questionnaire IDs:', err);
+    return [];
+  }
+};
+
+// Remove questionnaire ID from localStorage
+export const removeQuestionnaireId = (id: string) => {
+  try {
+    const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
+    const filteredIds = savedIds.filter((savedId: string) => savedId !== id);
+    localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(filteredIds));
+  } catch (err) {
+    console.error('Error removing questionnaire ID:', err);
   }
 };
 
