@@ -12,8 +12,12 @@ export default async function handler(
   try {
     const { telegram, instagram, phone } = req.body;
 
-    // At least one contact method must be provided
-    if (!telegram && !instagram && !phone) {
+    // At least one contact method must be provided and not empty
+    const hasTelegram = telegram && typeof telegram === 'string' && telegram.trim() !== '';
+    const hasInstagram = instagram && typeof instagram === 'string' && instagram.trim() !== '';
+    const hasPhone = phone && typeof phone === 'string' && phone.trim() !== '';
+
+    if (!hasTelegram && !hasInstagram && !hasPhone) {
       return res.status(400).json({ error: 'At least one contact method is required' });
     }
 
@@ -32,9 +36,9 @@ export default async function handler(
       return normalized;
     };
 
-    const normalizedTelegram = normalize(telegram || '');
-    const normalizedInstagram = normalize(instagram || '');
-    const normalizedPhone = normalize(phone || '', true);
+    const normalizedTelegram = hasTelegram ? normalize(telegram.trim()) : '';
+    const normalizedInstagram = hasInstagram ? normalize(instagram.trim()) : '';
+    const normalizedPhone = hasPhone ? normalize(phone.trim(), true) : '';
 
     // Find matching questionnaires
     const matches: Array<{
@@ -46,26 +50,35 @@ export default async function handler(
 
     questionnaires.forEach((questionnaire) => {
       const contact = questionnaire.contactData;
+      if (!contact) return;
       
-      const qTelegram = normalize(contact.telegram || '');
-      const qInstagram = normalize(contact.instagram || '');
-      const qPhone = normalize(contact.phone || '', true);
+      // Normalize stored contact data
+      const qTelegram = contact.telegram ? normalize(String(contact.telegram)) : '';
+      const qInstagram = contact.instagram ? normalize(String(contact.instagram)) : '';
+      const qPhone = contact.phone ? normalize(String(contact.phone), true) : '';
 
       // Match if any provided contact method matches
       // For telegram/instagram: exact match after normalization
-      // For phone: match if normalized values are equal (handles different formats)
       const matchesTelegram = normalizedTelegram && qTelegram && qTelegram === normalizedTelegram;
       const matchesInstagram = normalizedInstagram && qInstagram && qInstagram === normalizedInstagram;
-      const matchesPhone = normalizedPhone && qPhone && qPhone === normalizedPhone;
+      
+      // For phone: try multiple matching strategies
+      let matchesPhone = false;
+      if (normalizedPhone && qPhone) {
+        // Exact match
+        if (qPhone === normalizedPhone) {
+          matchesPhone = true;
+        } else {
+          // Remove + from both and compare
+          const qPhoneNoPlus = qPhone.replace(/^\+/, '');
+          const searchPhoneNoPlus = normalizedPhone.replace(/^\+/, '');
+          if (qPhoneNoPlus === searchPhoneNoPlus && qPhoneNoPlus.length > 0) {
+            matchesPhone = true;
+          }
+        }
+      }
 
-      // Also try partial matches for phone (in case one has + and other doesn't)
-      const matchesPhonePartial = normalizedPhone && qPhone && 
-        (qPhone === normalizedPhone || 
-         qPhone.replace(/^\+/, '') === normalizedPhone.replace(/^\+/, '') ||
-         qPhone === normalizedPhone.replace(/^\+/, '') ||
-         qPhone.replace(/^\+/, '') === normalizedPhone);
-
-      if (matchesTelegram || matchesInstagram || matchesPhone || matchesPhonePartial) {
+      if (matchesTelegram || matchesInstagram || matchesPhone) {
         matches.push({
           id: questionnaire.id,
           type: questionnaire.type,
