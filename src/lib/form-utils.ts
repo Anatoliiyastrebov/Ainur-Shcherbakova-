@@ -487,7 +487,37 @@ Current status:
 
     if (timeoutId) clearTimeout(timeoutId);
 
-    const responseData = await response.json();
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    let responseData;
+    
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response from Telegram:', text);
+      return { 
+        success: false, 
+        error: 'Invalid response from Telegram API' 
+      };
+    }
+
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      console.error('Empty response from Telegram API');
+      return { 
+        success: false, 
+        error: 'Empty response from Telegram API' 
+      };
+    }
+
+    try {
+      responseData = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse Telegram response:', parseError, 'Response text:', text);
+      return { 
+        success: false, 
+        error: 'Invalid JSON response from Telegram API' 
+      };
+    }
 
     if (!response.ok) {
       const errorMsg = responseData.description || `HTTP ${response.status}`;
