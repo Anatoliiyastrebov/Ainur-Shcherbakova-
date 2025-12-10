@@ -401,16 +401,33 @@ export const saveQuestionnaire = async (
       return { success: false, error: data.error || 'Failed to save questionnaire' };
     }
 
-    // Save questionnaire ID to localStorage
+    // Save questionnaire ID and full data to localStorage (even in production)
     if (data.id) {
       try {
+        // Save full questionnaire data to localStorage
+        const questionnaireData = {
+          id: data.id,
+          type,
+          formData,
+          additionalData: additionalData || {},
+          contactData,
+          markdown,
+          createdAt: new Date().toISOString(),
+          language: language || 'ru',
+          telegramMessageId: telegramMessageId || undefined,
+        };
+        localStorage.setItem(`questionnaire_${data.id}`, JSON.stringify(questionnaireData));
+        
+        // Save ID to list
         const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
         if (!savedIds.includes(data.id)) {
           savedIds.push(data.id);
           localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(savedIds));
         }
+        
+        console.log('Questionnaire saved to localStorage (production):', data.id);
       } catch (err) {
-        console.error('Error saving questionnaire ID to localStorage:', err);
+        console.error('Error saving questionnaire to localStorage:', err);
       }
     }
 

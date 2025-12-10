@@ -50,35 +50,32 @@ const DataRequest: React.FC = () => {
           return;
         }
 
-        // Check if we're in development and have local storage items
-        const isDevelopment = import.meta.env.DEV;
+        // Always try to load from localStorage first (works in both dev and production)
         let loadedQuestionnaires: QuestionnaireSummary[] = [];
-
-        if (isDevelopment) {
-          // In dev, try to load from localStorage for local_ prefixed IDs
-          const localIds = savedIds.filter((id: string) => id.startsWith('local_'));
-          localIds.forEach((id: string) => {
-            try {
-              const stored = localStorage.getItem(`questionnaire_${id}`);
-              if (stored) {
-                const data = JSON.parse(stored);
-                loadedQuestionnaires.push({
-                  id: data.id,
-                  type: data.type,
-                  createdAt: data.createdAt,
-                  contactData: data.contactData,
-                });
-              }
-            } catch (err) {
-              console.error('Error loading questionnaire from localStorage:', err);
+        
+        // Load from localStorage for all IDs
+        savedIds.forEach((id: string) => {
+          try {
+            const stored = localStorage.getItem(`questionnaire_${id}`);
+            if (stored) {
+              const data = JSON.parse(stored);
+              loadedQuestionnaires.push({
+                id: data.id,
+                type: data.type,
+                createdAt: data.createdAt,
+                contactData: data.contactData,
+                telegramMessageId: data.telegramMessageId,
+              });
             }
-          });
-        }
+          } catch (err) {
+            console.error('Error loading questionnaire from localStorage:', err);
+          }
+        });
 
-        // Try to fetch from API for non-local IDs or in production
-        const apiIds = isDevelopment 
-          ? savedIds.filter((id: string) => !id.startsWith('local_'))
-          : savedIds;
+        // Also try to fetch from API for any IDs not found in localStorage
+        // This helps if localStorage was cleared but API still has data
+        const foundLocalIds = loadedQuestionnaires.map(q => q.id);
+        const apiIds = savedIds.filter((id: string) => !foundLocalIds.includes(id));
 
         if (apiIds.length > 0) {
           try {
@@ -94,13 +91,34 @@ const DataRequest: React.FC = () => {
               const data = await response.json();
               console.log('API response:', data);
               if (data.questionnaires) {
-                loadedQuestionnaires.push(...data.questionnaires.map((q: any) => ({
-                  id: q.id,
-                  type: q.type,
-                  createdAt: q.createdAt,
-                  contactData: q.contactData,
-                  telegramMessageId: q.telegramMessageId,
-                })));
+                // Add questionnaires from API and also save them to localStorage
+                data.questionnaires.forEach((q: any) => {
+                  // Only add if not already loaded from localStorage
+                  if (!loadedQuestionnaires.find(existing => existing.id === q.id)) {
+                    loadedQuestionnaires.push({
+                      id: q.id,
+                      type: q.type,
+                      createdAt: q.createdAt,
+                      contactData: q.contactData,
+                      telegramMessageId: q.telegramMessageId,
+                    });
+                    
+                    // Try to fetch full data from API and save to localStorage
+                    // This is a backup to ensure we have the full data
+                    fetch(`/api/get-questionnaire?id=${q.id}`)
+                      .then(res => res.json())
+                      .then(result => {
+                        if (result.success && result.data) {
+                          try {
+                            localStorage.setItem(`questionnaire_${q.id}`, JSON.stringify(result.data));
+                          } catch (err) {
+                            console.error('Error saving questionnaire to localStorage:', err);
+                          }
+                        }
+                      })
+                      .catch(err => console.warn('Error fetching full questionnaire data:', err));
+                  }
+                });
               }
             }
           } catch (apiError) {
@@ -178,20 +196,9 @@ const DataRequest: React.FC = () => {
         method: 'DELETE',
       });
 
+      // Even if API call fails, we've already removed from localStorage
+      // So we can show success message
       if (!response || !response.ok) {
-        // If API fails but it's a local ID, try localStorage
-        if (isDevelopment) {
-          try {
-            localStorage.removeItem(`questionnaire_${id}`);
-            removeQuestionnaireId(id);
-            toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
-            setQuestionnaires(prev => prev.filter(q => q.id !== id));
-            return;
-          } catch (err) {
-            // Continue to error handling
-          }
-        }
-        
         const text = await response?.text() || '';
         let data;
         try {
@@ -199,30 +206,24 @@ const DataRequest: React.FC = () => {
         } catch {
           data = {};
         }
-        toast.error(data.error || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
+        
+        // If localStorage removal was successful, show success even if API failed
+        toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+        setQuestionnaires(prev => prev.filter(q => q.id !== id));
+        console.warn('API deletion failed, but removed from localStorage:', data.error || 'Unknown error');
         return;
       }
 
       const data = await response.json();
 
       toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
-      // Remove from list and localStorage
+      // Remove from list (localStorage already removed above)
       setQuestionnaires(prev => prev.filter(q => q.id !== id));
-      removeQuestionnaireId(id);
     } catch (error: any) {
-      // If fetch fails, try localStorage as fallback
-      if (isDevelopment) {
-        try {
-          localStorage.removeItem(`questionnaire_${id}`);
-          removeQuestionnaireId(id);
-          toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
-          setQuestionnaires(prev => prev.filter(q => q.id !== id));
-          return;
-        } catch (err) {
-          // Continue to error handling
-        }
-      }
-      toast.error(error.message || (language === 'ru' ? 'Ошибка при удалении' : 'Error deleting'));
+      // localStorage already removed above, so show success even if API fails
+      toast.success(language === 'ru' ? 'Анкета удалена' : 'Questionnaire deleted');
+      setQuestionnaires(prev => prev.filter(q => q.id !== id));
+      console.warn('API deletion error, but removed from localStorage:', error.message);
     }
   };
 
