@@ -41,6 +41,7 @@ const DataRequest: React.FC = () => {
       setLoading(true);
       try {
         const savedIds = getSavedQuestionnaireIds();
+        console.log('Loading questionnaires, saved IDs:', savedIds);
         
         if (savedIds.length === 0) {
           setQuestionnaires([]);
@@ -57,14 +58,28 @@ const DataRequest: React.FC = () => {
         });
 
         const data = await response.json();
+        console.log('API response:', data);
 
         if (!response.ok) {
+          console.error('API error:', data);
           toast.error(data.error || (language === 'ru' ? 'Ошибка загрузки' : 'Load error'));
           setQuestionnaires([]);
           return;
         }
 
-        setQuestionnaires(data.questionnaires || []);
+        const loadedQuestionnaires = data.questionnaires || [];
+        console.log('Loaded questionnaires:', loadedQuestionnaires);
+        
+        // Filter out any IDs that no longer exist (cleanup)
+        const foundIds = loadedQuestionnaires.map((q: QuestionnaireSummary) => q.id);
+        const missingIds = savedIds.filter((id: string) => !foundIds.includes(id));
+        
+        if (missingIds.length > 0) {
+          console.log('Removing missing IDs from localStorage:', missingIds);
+          missingIds.forEach((id: string) => removeQuestionnaireId(id));
+        }
+
+        setQuestionnaires(loadedQuestionnaires);
       } catch (error: any) {
         console.error('Load error:', error);
         toast.error(error.message || (language === 'ru' ? 'Ошибка загрузки' : 'Load error'));
@@ -75,6 +90,18 @@ const DataRequest: React.FC = () => {
     };
 
     loadQuestionnaires();
+    
+    // Reload when page becomes visible (in case user navigated back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadQuestionnaires();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [language]);
 
   const handleDelete = async (id: string) => {

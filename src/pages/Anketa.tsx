@@ -207,6 +207,24 @@ const Anketa: React.FC = () => {
       // First save the questionnaire to get an ID
       const saveResult = await saveQuestionnaire(type, formData, additionalData, contactData, markdown, language);
       
+      if (!saveResult.success || !saveResult.id) {
+        toast.error(saveResult.error || (language === 'ru' ? 'Ошибка сохранения анкеты' : 'Failed to save questionnaire'));
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Ensure ID is saved to localStorage
+      try {
+        const savedIds = JSON.parse(localStorage.getItem('submitted_questionnaire_ids') || '[]');
+        if (!savedIds.includes(saveResult.id)) {
+          savedIds.push(saveResult.id);
+          localStorage.setItem('submitted_questionnaire_ids', JSON.stringify(savedIds));
+          console.log('Questionnaire ID saved to localStorage:', saveResult.id);
+        }
+      } catch (err) {
+        console.error('Error saving questionnaire ID to localStorage:', err);
+      }
+      
       // Then send to Telegram
       const telegramResult = await sendToTelegram(markdown);
       
@@ -214,17 +232,20 @@ const Anketa: React.FC = () => {
         clearFormData(type, language);
         // Navigate to success page with questionnaire ID
         const queryParams = new URLSearchParams({ lang: language });
-        if (saveResult.id) {
-          queryParams.set('id', saveResult.id);
-        }
+        queryParams.set('id', saveResult.id);
         navigate(`/success?${queryParams.toString()}`);
       } else {
-        // Show detailed error message
-        const errorMsg = telegramResult.error || t('submitError');
-        console.error('Failed to send form:', errorMsg);
-        toast.error(errorMsg, {
-          duration: 5000,
-        });
+        // Even if Telegram fails, questionnaire is saved, so show success but with warning
+        clearFormData(type, language);
+        toast.warning(
+          language === 'ru' 
+            ? 'Анкета сохранена, но не отправлена в Telegram. Вы можете просмотреть её в "Запрос данных".'
+            : 'Questionnaire saved but failed to send to Telegram. You can view it in "Data Request".',
+          { duration: 5000 }
+        );
+        const queryParams = new URLSearchParams({ lang: language });
+        queryParams.set('id', saveResult.id);
+        navigate(`/success?${queryParams.toString()}`);
       }
     } catch (error: any) {
       console.error('Submit error:', error);
