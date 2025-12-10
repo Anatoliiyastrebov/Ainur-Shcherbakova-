@@ -328,7 +328,37 @@ export const saveQuestionnaire = async (
       }),
     });
 
-    const data = await response.json();
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      return { 
+        success: false, 
+        error: response.statusText || 'Server returned non-JSON response' 
+      };
+    }
+
+    // Check if response body is empty
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      console.error('Empty response from server');
+      return { 
+        success: false, 
+        error: 'Empty response from server' 
+      };
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse JSON:', parseError, 'Response text:', text);
+      return { 
+        success: false, 
+        error: 'Invalid JSON response from server' 
+      };
+    }
 
     if (!response.ok) {
       return { success: false, error: data.error || 'Failed to save questionnaire' };
