@@ -377,7 +377,7 @@ export const infantQuestionnaire: QuestionnaireSection[] = [
       {
         id: 'water_per_day',
         type: 'number',
-        label: { ru: 'Сколько воды в день пьёт ребенок (литров)', en: 'How much water does the child drink per day (liters)' },
+        label: { ru: 'Сколько воды в день пьёт ребенок (миллилитров)', en: 'How much water does the child drink per day (milliliters)' },
         icon: 'droplet',
         required: true,
         hasAdditional: true,
