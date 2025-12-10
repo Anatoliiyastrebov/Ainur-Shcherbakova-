@@ -362,6 +362,7 @@ export const saveQuestionnaire = async (
         contactData,
         markdown,
         language,
+        telegramMessageId: telegramMessageId || undefined,
       }),
     });
 
