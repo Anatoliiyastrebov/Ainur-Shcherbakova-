@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 const Success: React.FC = () => {
   const { language, t } = useLanguage();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const questionnaireId = searchParams.get('id');
   
@@ -20,6 +21,12 @@ const Success: React.FC = () => {
     if (questionnaireUrl) {
       navigator.clipboard.writeText(questionnaireUrl);
       toast.success(language === 'ru' ? 'Ссылка скопирована!' : 'Link copied!');
+    }
+  };
+
+  const openQuestionnaire = () => {
+    if (questionnaireId) {
+      navigate(`/questionnaire/${questionnaireId}?lang=${language}`);
     }
   };
 
@@ -65,13 +72,16 @@ const Success: React.FC = () => {
                   {language === 'ru' ? 'Копировать' : 'Copy'}
                 </Button>
               </div>
-              <Link
-                to={`/questionnaire/${questionnaireId}?lang=${language}`}
-                className="btn-secondary inline-flex items-center gap-2 w-full justify-center"
-              >
-                <ExternalLink className="w-4 h-4" />
-                {language === 'ru' ? 'Открыть анкету' : 'Open questionnaire'}
-              </Link>
+              {questionnaireId && (
+                <Button
+                  onClick={openQuestionnaire}
+                  variant="secondary"
+                  className="w-full inline-flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {language === 'ru' ? 'Открыть анкету' : 'Open questionnaire'}
+                </Button>
+              )}
             </div>
           )}
 
