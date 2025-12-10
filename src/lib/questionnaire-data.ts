@@ -723,22 +723,6 @@ export const womanQuestionnaire: QuestionnaireSection[] = [
     ],
   },
   {
-    id: 'covid',
-    title: { ru: 'COVID-19', en: 'COVID-19' },
-    icon: 'shield',
-    questions: [
-      {
-        id: 'covid_status',
-        type: 'radio',
-        label: { ru: 'Был ли ковид или вакцина', en: 'COVID or vaccination status' },
-        icon: 'shield',
-        options: covidOptionsWoman,
-        required: true,
-        hasAdditional: true,
-      },
-    ],
-  },
-  {
     id: 'health',
     title: { ru: 'Здоровье', en: 'Health' },
     icon: 'heart',
@@ -760,6 +744,15 @@ export const womanQuestionnaire: QuestionnaireSection[] = [
         options: weightSatisfactionOptions,
         required: true,
         hasAdditional: false,
+      },
+      {
+        id: 'covid_status',
+        type: 'radio',
+        label: { ru: 'Был ли ковид или вакцина', en: 'COVID or vaccination status' },
+        icon: 'shield',
+        options: covidOptionsWoman,
+        required: true,
+        hasAdditional: true,
       },
       {
         id: 'digestion',
@@ -1008,22 +1001,6 @@ export const manQuestionnaire: QuestionnaireSection[] = [
     ],
   },
   {
-    id: 'covid',
-    title: { ru: 'COVID-19', en: 'COVID-19' },
-    icon: 'shield',
-    questions: [
-      {
-        id: 'covid_status',
-        type: 'radio',
-        label: { ru: 'Был ли ковид или вакцина', en: 'COVID or vaccination status' },
-        icon: 'shield',
-        options: covidOptionsMan,
-        required: true,
-        hasAdditional: true,
-      },
-    ],
-  },
-  {
     id: 'health',
     title: { ru: 'Здоровье', en: 'Health' },
     icon: 'heart',
@@ -1045,6 +1022,15 @@ export const manQuestionnaire: QuestionnaireSection[] = [
         options: weightSatisfactionOptions,
         required: true,
         hasAdditional: false,
+      },
+      {
+        id: 'covid_status',
+        type: 'radio',
+        label: { ru: 'Был ли ковид или вакцина', en: 'COVID or vaccination status' },
+        icon: 'shield',
+        options: covidOptionsMan,
+        required: true,
+        hasAdditional: true,
       },
       {
         id: 'digestion',
