@@ -1,34 +1,12 @@
 import React from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CheckCircle, Home, Send, ExternalLink, Copy } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { CheckCircle, Home, Send } from 'lucide-react';
 
 const Success: React.FC = () => {
   const { language, t } = useLanguage();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const questionnaireId = searchParams.get('id');
-  
-  const questionnaireUrl = questionnaireId 
-    ? `${window.location.origin}/questionnaire/${questionnaireId}?lang=${language}`
-    : null;
-
-  const copyLink = () => {
-    if (questionnaireUrl) {
-      navigator.clipboard.writeText(questionnaireUrl);
-      toast.success(language === 'ru' ? 'Ссылка скопирована!' : 'Link copied!');
-    }
-  };
-
-  const openQuestionnaire = () => {
-    if (questionnaireId) {
-      navigate(`/questionnaire/${questionnaireId}?lang=${language}`);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,43 +25,6 @@ const Success: React.FC = () => {
           <p className="text-lg text-muted-foreground mb-8">
             {t('successMessage')}
           </p>
-
-          {questionnaireUrl && (
-            <div className="bg-accent/50 rounded-xl p-4 mb-8 space-y-3">
-              <p className="text-sm font-medium text-foreground">
-                {language === 'ru' 
-                  ? 'Вы можете просмотреть и удалить свою анкету по этой ссылке:'
-                  : 'You can view and delete your questionnaire using this link:'}
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={questionnaireUrl}
-                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyLink}
-                  className="flex items-center gap-2"
-                >
-                  <Copy className="w-4 h-4" />
-                  {language === 'ru' ? 'Копировать' : 'Copy'}
-                </Button>
-              </div>
-              {questionnaireId && (
-                <Button
-                  onClick={openQuestionnaire}
-                  variant="secondary"
-                  className="w-full inline-flex items-center justify-center gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  {language === 'ru' ? 'Открыть анкету' : 'Open questionnaire'}
-                </Button>
-              )}
-            </div>
-          )}
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
