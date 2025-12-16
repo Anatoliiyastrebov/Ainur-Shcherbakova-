@@ -12,7 +12,6 @@ export interface FormAdditionalData {
 export interface ContactData {
   telegram?: string;
   instagram?: string;
-  phone?: string;
 }
 
 export interface FormErrors {
@@ -169,9 +168,8 @@ export const validateForm = (
   // Validate contact - at least one method must be filled
   const hasTelegram = contactData.telegram && contactData.telegram.trim() !== '';
   const hasInstagram = contactData.instagram && contactData.instagram.trim() !== '';
-  const hasPhone = contactData.phone && contactData.phone.trim() !== '';
   
-  if (!hasTelegram && !hasInstagram && !hasPhone) {
+  if (!hasTelegram && !hasInstagram) {
     errors['contact_method'] = t.required;
   }
 
@@ -284,13 +282,6 @@ export const generateMarkdown = (
     const cleanInstagram = contactData.instagram.replace(/^@/, '').trim();
     const instagramLink = `https://instagram.com/${cleanInstagram}`;
     contacts.push(`Instagram: @${escapeHtml(cleanInstagram)}\n<a href="${instagramLink}">${escapeHtml(instagramLink)}</a>`);
-  }
-  
-  if (contactData.phone && contactData.phone.trim() !== '') {
-    const cleanPhone = contactData.phone.trim();
-    const phoneLink = `tel:${cleanPhone}`;
-    const phoneLabel = lang === 'ru' ? 'Телефон' : 'Phone';
-    contacts.push(`${phoneLabel}: <a href="${phoneLink}">${escapeHtml(cleanPhone)}</a>`);
   }
 
   if (contacts.length > 0) {

@@ -51,7 +51,6 @@ const Anketa: React.FC = () => {
   const [contactData, setContactData] = useState<ContactData>({
     telegram: '',
     instagram: '',
-    phone: '',
   });
   const [dsgvoAccepted, setDsgvoAccepted] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -171,7 +170,7 @@ const Anketa: React.FC = () => {
   const handleClearForm = () => {
     setFormData({});
     setAdditionalData({});
-    setContactData({ telegram: '', instagram: '', phone: '' });
+    setContactData({ telegram: '', instagram: '' });
     setDsgvoAccepted(false);
     setErrors({});
     clearFormData(type, language);
@@ -332,13 +331,12 @@ const Anketa: React.FC = () => {
             errors={{
               telegram: errors['contact_telegram'],
               instagram: errors['contact_instagram'],
-              phone: errors['contact_phone'],
               contact_method: errors['contact_method'],
             }}
             onTelegramChange={(value) => {
               setContactData((prev) => ({ ...prev, telegram: value }));
               // Clear contact_method error if any field is filled
-              if (value.trim() !== '' || contactData.instagram?.trim() || contactData.phone?.trim()) {
+              if (value.trim() !== '' || contactData.instagram?.trim()) {
                 setErrors((prev) => {
                   const newErrors = { ...prev };
                   delete newErrors['contact_method'];
@@ -350,23 +348,11 @@ const Anketa: React.FC = () => {
             onInstagramChange={(value) => {
               setContactData((prev) => ({ ...prev, instagram: value }));
               // Clear contact_method error if any field is filled
-              if (value.trim() !== '' || contactData.telegram?.trim() || contactData.phone?.trim()) {
+              if (value.trim() !== '' || contactData.telegram?.trim()) {
                 setErrors((prev) => {
                   const newErrors = { ...prev };
                   delete newErrors['contact_method'];
                   delete newErrors['contact_instagram'];
-                  return newErrors;
-                });
-              }
-            }}
-            onPhoneChange={(value) => {
-              setContactData((prev) => ({ ...prev, phone: value }));
-              // Clear contact_method error if any field is filled
-              if (value.trim() !== '' || contactData.telegram?.trim() || contactData.instagram?.trim()) {
-                setErrors((prev) => {
-                  const newErrors = { ...prev };
-                  delete newErrors['contact_method'];
-                  delete newErrors['contact_phone'];
                   return newErrors;
                 });
               }

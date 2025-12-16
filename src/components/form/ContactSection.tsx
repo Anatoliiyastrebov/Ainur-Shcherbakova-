@@ -1,22 +1,19 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MessageCircle, Instagram, Phone, ExternalLink } from 'lucide-react';
+import { MessageCircle, Instagram, ExternalLink } from 'lucide-react';
 
 interface ContactSectionProps {
   contactData: {
     telegram?: string;
     instagram?: string;
-    phone?: string;
   };
   errors?: {
     telegram?: string;
     instagram?: string;
-    phone?: string;
     contact_method?: string;
   };
   onTelegramChange: (value: string) => void;
   onInstagramChange: (value: string) => void;
-  onPhoneChange: (value: string) => void;
 }
 
 export const ContactSection: React.FC<ContactSectionProps> = ({
@@ -24,17 +21,14 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   errors = {},
   onTelegramChange,
   onInstagramChange,
-  onPhoneChange,
 }) => {
   const { t } = useLanguage();
 
   const cleanTelegram = (contactData.telegram || '').replace(/^@/, '').trim();
   const cleanInstagram = (contactData.instagram || '').replace(/^@/, '').trim();
-  const cleanPhone = (contactData.phone || '').trim();
 
   const telegramLink = cleanTelegram ? `https://t.me/${cleanTelegram}` : '';
   const instagramLink = cleanInstagram ? `https://instagram.com/${cleanInstagram}` : '';
-  const phoneLink = cleanPhone ? `tel:${cleanPhone}` : '';
 
   return (
     <div className="card-wellness space-y-4">
@@ -117,27 +111,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
               <ExternalLink className="w-4 h-4 flex-shrink-0" />
             </a>
           </div>
-        )}
-      </div>
-
-      {/* Phone */}
-      <div>
-        <label className="text-sm font-medium text-foreground mb-1 block flex items-center gap-2">
-          <Phone className="w-4 h-4 text-primary" />
-          {t('phone')}
-        </label>
-        <input
-          type="tel"
-          className={`input-field ${errors.phone ? 'input-error' : ''}`}
-          value={contactData.phone || ''}
-          onChange={(e) => onPhoneChange(e.target.value)}
-          placeholder={t('phoneHint')}
-        />
-        {errors.phone && (
-          <p className="error-message mt-1">
-            <AlertCircleIcon />
-            {errors.phone}
-          </p>
         )}
       </div>
     </div>
