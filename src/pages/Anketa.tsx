@@ -56,6 +56,7 @@ const Anketa: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [bloodTestFiles, setBloodTestFiles] = useState<File[]>([]);
 
   // Load saved form data on mount
   useEffect(() => {
@@ -148,6 +149,44 @@ const Anketa: React.FC = () => {
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors['how_learned_additional'];
+          return newErrors;
+        });
+      }
+    }
+    // If what_else changed, clear conditional field errors if options are deselected
+    if (questionId === 'what_else') {
+      const whatElseArray = Array.isArray(value) ? value : [value];
+      if (!whatElseArray.includes('gv')) {
+        setFormData((prev) => {
+          const newData = { ...prev };
+          delete newData['gv_months'];
+          return newData;
+        });
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors['gv_months'];
+          return newErrors;
+        });
+      }
+      if (!whatElseArray.includes('pregnancy')) {
+        setFormData((prev) => {
+          const newData = { ...prev };
+          delete newData['pregnancy_term'];
+          return newData;
+        });
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors['pregnancy_term'];
+          return newErrors;
+        });
+      }
+    }
+    // Clear errors for conditional fields when they are filled
+    if (questionId === 'gv_months' || questionId === 'pregnancy_term') {
+      if (errors[questionId]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[questionId];
           return newErrors;
         });
       }
@@ -324,6 +363,93 @@ const Anketa: React.FC = () => {
               </div>
             </div>
           ))}
+
+          {/* Conditional fields for GV and Pregnancy */}
+          {type === 'woman' && (
+            <>
+              {Array.isArray(formData['what_else']) && formData['what_else'].includes('gv') && (
+                <div className="card-wellness space-y-3 animate-fade-in">
+                  <label className="flex items-center gap-2 text-foreground font-medium">
+                    <span>{language === 'ru' ? 'Сколько месяцев малышу?' : 'How many months old is the baby?'}</span>
+                    <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className={`input-field ${errors['gv_months'] ? 'input-error' : ''}`}
+                    value={formData['gv_months'] || ''}
+                    onChange={(e) => handleFieldChange('gv_months', e.target.value)}
+                    min="0"
+                    placeholder={language === 'ru' ? 'Введите количество месяцев' : 'Enter number of months'}
+                  />
+                  {errors['gv_months'] && (
+                    <p className="error-message">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors['gv_months']}
+                    </p>
+                  )}
+                </div>
+              )}
+              {Array.isArray(formData['what_else']) && formData['what_else'].includes('pregnancy') && (
+                <div className="card-wellness space-y-3 animate-fade-in">
+                  <label className="flex items-center gap-2 text-foreground font-medium">
+                    <span>{language === 'ru' ? 'Какой срок беременности?' : 'What is the pregnancy term?'}</span>
+                    <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className={`input-field ${errors['pregnancy_term'] ? 'input-error' : ''}`}
+                    value={formData['pregnancy_term'] || ''}
+                    onChange={(e) => handleFieldChange('pregnancy_term', e.target.value)}
+                    placeholder={language === 'ru' ? 'Например: 12 недель' : 'For example: 12 weeks'}
+                  />
+                  {errors['pregnancy_term'] && (
+                    <p className="error-message">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors['pregnancy_term']}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Information Block */}
+          <div className="card-wellness bg-primary/10 border-primary/20 p-6 rounded-xl">
+            <p className="text-foreground text-center">
+              {language === 'ru' 
+                ? 'Все, кто следует моим рекомендациям, бесплатно добавляются в закрытую группу марафона по питанию, где я помогаю наладить рацион.'
+                : 'Everyone who follows my recommendations is added for free to a closed nutrition marathon group where I help establish a diet.'}
+            </p>
+          </div>
+
+          {/* Blood Test Files Upload */}
+          <div className="card-wellness space-y-3 animate-fade-in">
+            <label className="flex items-center gap-2 text-foreground font-medium">
+              <span>{language === 'ru' ? 'Результаты анализов крови за последние 3 месяца (необязательно)' : 'Blood test results for the last 3 months (optional)'}</span>
+            </label>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              className="input-field"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setBloodTestFiles(files);
+              }}
+            />
+            {bloodTestFiles.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-muted-foreground mb-2">
+                  {language === 'ru' ? 'Выбранные файлы:' : 'Selected files:'}
+                </p>
+                <ul className="list-disc list-inside text-sm text-muted-foreground">
+                  {bloodTestFiles.map((file, index) => (
+                    <li key={index}>{file.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
           {/* Contact Section */}
           <ContactSection

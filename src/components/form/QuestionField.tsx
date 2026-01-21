@@ -150,6 +150,12 @@ export const QuestionField: React.FC<QuestionFieldProps> = ({
 
       {renderInput()}
 
+      {question.helperText && (
+        <p className="text-sm text-muted-foreground mt-1">
+          {question.helperText[language]}
+        </p>
+      )}
+
       {error && (
         <p className="error-message">
           <AlertCircleIcon />

@@ -25,6 +25,20 @@ export interface Question {
     ru: string;
     en: string;
   };
+  helperText?: {
+    ru: string;
+    en: string;
+  };
+  conditionalField?: {
+    triggerValue: string | string[];
+    fieldId: string;
+    fieldLabel: {
+      ru: string;
+      en: string;
+    };
+    fieldType: 'number' | 'text';
+    required: boolean;
+  };
 }
 
 export interface QuestionnaireSection {
@@ -93,8 +107,9 @@ const allergyOptionsExtended: QuestionOption[] = [
 
 const skinOptions: QuestionOption[] = [
   { value: 'no_issues', label: { ru: 'Нет проблем', en: 'No issues' } },
-  { value: 'moles', label: { ru: 'Много родинок', en: 'Many moles' } },
-  { value: 'warts', label: { ru: 'Бородавки', en: 'Warts' } },
+  { value: 'moles', label: { ru: 'Родинки', en: 'Moles' } },
+  { value: 'warts', label: { ru: 'Папилломы', en: 'Warts' } },
+  { value: 'red_dots', label: { ru: 'Красные точки', en: 'Red dots' } },
   { value: 'rashes', label: { ru: 'Высыпания', en: 'Rashes' } },
   { value: 'eczema', label: { ru: 'Экзема', en: 'Eczema' } },
 ];
@@ -180,15 +195,17 @@ const skinConditionOptions: QuestionOption[] = [
 const molesWartsHerpesOptions: QuestionOption[] = [
   { value: 'no_issues', label: { ru: 'Нет проблем', en: 'No issues' } },
   { value: 'moles', label: { ru: 'Родинки', en: 'Moles' } },
-  { value: 'warts', label: { ru: 'Бородавки', en: 'Warts' } },
+  { value: 'warts', label: { ru: 'Папилломы', en: 'Warts' } },
+  { value: 'red_dots', label: { ru: 'Красные точки', en: 'Red dots' } },
   { value: 'herpes', label: { ru: 'Герпес', en: 'Herpes' } },
 ];
 
 const dischargeMolesWartsHerpesOptions: QuestionOption[] = [
   { value: 'no_issues', label: { ru: 'Нет проблем', en: 'No issues' } },
   { value: 'thrush', label: { ru: 'Молочница', en: 'Thrush' } },
-  { value: 'moles', label: { ru: 'Много родинок', en: 'Many moles' } },
-  { value: 'warts', label: { ru: 'Бородавки', en: 'Warts' } },
+  { value: 'moles', label: { ru: 'Родинки', en: 'Moles' } },
+  { value: 'warts', label: { ru: 'Папилломы', en: 'Warts' } },
+  { value: 'red_dots', label: { ru: 'Красные точки', en: 'Red dots' } },
   { value: 'hpv_skin', label: { ru: 'Папилломавирус на коже', en: 'HPV on skin' } },
   { value: 'herpes', label: { ru: 'Герпес', en: 'Herpes' } },
 ];
@@ -322,6 +339,15 @@ export const infantQuestionnaire: QuestionnaireSection[] = [
         required: true,
         hasAdditional: false,
       },
+      {
+        id: 'location',
+        type: 'text',
+        label: { ru: 'Страна, город', en: 'Country, city' },
+        icon: 'map-pin',
+        required: true,
+        hasAdditional: false,
+        placeholder: { ru: 'Например: Россия, Москва', en: 'For example: Russia, Moscow' },
+      },
     ],
   },
   {
@@ -359,7 +385,7 @@ export const infantQuestionnaire: QuestionnaireSection[] = [
       {
         id: 'skin_condition',
         type: 'checkbox',
-        label: { ru: 'Родинки / бородавки / высыпания / экзема', en: 'Moles / warts / rashes / eczema' },
+        label: { ru: 'Родинки / папилломы / красные точки / высыпания / экзема', en: 'Moles / warts / red dots / rashes / eczema' },
         icon: 'sparkles',
         options: skinOptions,
         required: true,
@@ -381,6 +407,7 @@ export const infantQuestionnaire: QuestionnaireSection[] = [
         icon: 'droplet',
         required: true,
         hasAdditional: true,
+        helperText: { ru: 'Чай, кофе, компоты, супы — НЕ считаются водой.', en: 'Tea, coffee, compotes, soups — are NOT counted as water.' },
       },
       {
         id: 'injuries',
@@ -489,6 +516,15 @@ export const infantQuestionnaire: QuestionnaireSection[] = [
         placeholder: { ru: 'Дополнительная информация', en: 'Additional information' },
       },
       {
+        id: 'main_problem',
+        type: 'textarea',
+        label: { ru: 'Ваша основная проблема, которую хотелось бы решить?', en: 'Your main problem that you would like to solve?' },
+        icon: 'alert-circle',
+        required: true,
+        hasAdditional: false,
+        placeholder: { ru: 'Опишите основную проблему', en: 'Describe the main problem' },
+      },
+      {
         id: 'how_learned',
         type: 'radio',
         label: { ru: 'Как вы обо мне узнали?', en: 'How did you learn about me?' },
@@ -535,6 +571,15 @@ export const childQuestionnaire: QuestionnaireSection[] = [
         icon: 'scale',
         required: true,
         hasAdditional: false,
+      },
+      {
+        id: 'location',
+        type: 'text',
+        label: { ru: 'Страна, город', en: 'Country, city' },
+        icon: 'map-pin',
+        required: true,
+        hasAdditional: false,
+        placeholder: { ru: 'Например: Россия, Москва', en: 'For example: Russia, Moscow' },
       },
     ],
   },
@@ -595,7 +640,7 @@ export const childQuestionnaire: QuestionnaireSection[] = [
       {
         id: 'skin_condition',
         type: 'checkbox',
-        label: { ru: 'Родинки / бородавки / высыпания / экзема', en: 'Moles / warts / rashes / eczema' },
+        label: { ru: 'Родинки / папилломы / красные точки / высыпания / экзема', en: 'Moles / warts / red dots / rashes / eczema' },
         icon: 'sparkles',
         options: skinOptions,
         required: true,
@@ -627,6 +672,7 @@ export const childQuestionnaire: QuestionnaireSection[] = [
         options: waterOptions,
         required: true,
         hasAdditional: true,
+        helperText: { ru: 'Чай, кофе, компоты, супы — НЕ считаются водой.', en: 'Tea, coffee, compotes, soups — are NOT counted as water.' },
       },
       {
         id: 'injuries',
@@ -663,6 +709,15 @@ export const childQuestionnaire: QuestionnaireSection[] = [
         required: false,
         hasAdditional: false,
         placeholder: { ru: 'Дополнительная информация', en: 'Additional information' },
+      },
+      {
+        id: 'main_problem',
+        type: 'textarea',
+        label: { ru: 'Ваша основная проблема, которую хотелось бы решить?', en: 'Your main problem that you would like to solve?' },
+        icon: 'alert-circle',
+        required: true,
+        hasAdditional: false,
+        placeholder: { ru: 'Опишите основную проблему', en: 'Describe the main problem' },
       },
       {
         id: 'how_learned',
@@ -719,6 +774,15 @@ export const womanQuestionnaire: QuestionnaireSection[] = [
         icon: 'scale',
         required: true,
         hasAdditional: false,
+      },
+      {
+        id: 'location',
+        type: 'text',
+        label: { ru: 'Страна, город', en: 'Country, city' },
+        icon: 'map-pin',
+        required: true,
+        hasAdditional: false,
+        placeholder: { ru: 'Например: Россия, Москва', en: 'For example: Russia, Moscow' },
       },
     ],
   },
@@ -897,6 +961,7 @@ export const womanQuestionnaire: QuestionnaireSection[] = [
         options: waterOptions,
         required: true,
         hasAdditional: true,
+        helperText: { ru: 'Чай, кофе, компоты, супы — НЕ считаются водой.', en: 'Tea, coffee, compotes, soups — are NOT counted as water.' },
       },
       {
         id: 'varicose_hemorrhoids',
@@ -924,9 +989,9 @@ export const womanQuestionnaire: QuestionnaireSection[] = [
       {
         id: 'main_problem',
         type: 'textarea',
-        label: { ru: 'Ваша основная проблема, которую хотелось бы решить больше всего?', en: 'Your main problem that you would most like to solve?' },
+        label: { ru: 'Ваша основная проблема, которую хотелось бы решить?', en: 'Your main problem that you would like to solve?' },
         icon: 'alert-circle',
-        required: false,
+        required: true,
         hasAdditional: false,
         placeholder: { ru: 'Опишите основную проблему', en: 'Describe the main problem' },
       },
@@ -997,6 +1062,15 @@ export const manQuestionnaire: QuestionnaireSection[] = [
         icon: 'scale',
         required: true,
         hasAdditional: false,
+      },
+      {
+        id: 'location',
+        type: 'text',
+        label: { ru: 'Страна, город', en: 'Country, city' },
+        icon: 'map-pin',
+        required: true,
+        hasAdditional: false,
+        placeholder: { ru: 'Например: Россия, Москва', en: 'For example: Russia, Moscow' },
       },
     ],
   },
@@ -1193,9 +1267,9 @@ export const manQuestionnaire: QuestionnaireSection[] = [
       {
         id: 'main_problem',
         type: 'textarea',
-        label: { ru: 'Ваша основная проблема, которую хотелось бы решить больше всего?', en: 'Your main problem that you would most like to solve?' },
+        label: { ru: 'Ваша основная проблема, которую хотелось бы решить?', en: 'Your main problem that you would like to solve?' },
         icon: 'alert-circle',
-        required: false,
+        required: true,
         hasAdditional: false,
         placeholder: { ru: 'Опишите основную проблему', en: 'Describe the main problem' },
       },

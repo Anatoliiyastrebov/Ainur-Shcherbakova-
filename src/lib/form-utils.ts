@@ -165,6 +165,24 @@ export const validateForm = (
     }
   }
 
+  // Special validation: if GV is selected, gv_months is required
+  if (formData['what_else']) {
+    const whatElseValue = formData['what_else'];
+    const whatElseArray = Array.isArray(whatElseValue) ? whatElseValue : [whatElseValue];
+    if (whatElseArray.includes('gv')) {
+      const gvMonths = formData['gv_months'];
+      if (!gvMonths || (typeof gvMonths === 'string' && gvMonths.trim() === '') || isNaN(Number(gvMonths))) {
+        errors['gv_months'] = t.required;
+      }
+    }
+    if (whatElseArray.includes('pregnancy')) {
+      const pregnancyTerm = formData['pregnancy_term'];
+      if (!pregnancyTerm || (typeof pregnancyTerm === 'string' && pregnancyTerm.trim() === '')) {
+        errors['pregnancy_term'] = t.required;
+      }
+    }
+  }
+
   // Validate contact - at least one method must be filled
   const hasTelegram = contactData.telegram && contactData.telegram.trim() !== '';
   const hasInstagram = contactData.instagram && contactData.instagram.trim() !== '';
@@ -289,6 +307,16 @@ export const generateMarkdown = (
     contacts.forEach((contact) => {
       html += `${contact}\n`;
     });
+  }
+
+  // Add conditional fields for GV and Pregnancy
+  if (formData['gv_months']) {
+    const gvMonthsLabel = lang === 'ru' ? 'Сколько месяцев малышу?' : 'How many months old is the baby?';
+    html += `<b>${escapeHtml(gvMonthsLabel)}</b>\n${escapeHtml(String(formData['gv_months']))}\n`;
+  }
+  if (formData['pregnancy_term']) {
+    const pregnancyTermLabel = lang === 'ru' ? 'Какой срок беременности?' : 'What is the pregnancy term?';
+    html += `<b>${escapeHtml(pregnancyTermLabel)}</b>\n${escapeHtml(String(formData['pregnancy_term']))}\n`;
   }
 
   return html;

@@ -26,6 +26,7 @@ import {
   Brain,
   Candy,
   Bone,
+  MapPin,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.FC<{ className?: string }>> = {
@@ -55,6 +56,7 @@ const iconMap: Record<string, React.FC<{ className?: string }>> = {
   brain: Brain,
   candy: Candy,
   bone: Bone,
+  'map-pin': MapPin,
 };
 
 interface SectionIconProps {
