@@ -6,30 +6,34 @@ const CONTENT_ENDPOINT = "/api/content";
 export const ContentProvider = ({ children }) => {
   const [content, setContent] = useState({});
   const [loading, setLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const reloadContent = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(CONTENT_ENDPOINT, { credentials: "include" });
+      if (!response.ok) {
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      setContent(data || {});
+      setHasUnsavedChanges(false);
+    } catch (_error) {
+      // Keep default content if backend is not available.
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const response = await fetch(CONTENT_ENDPOINT, { credentials: "include" });
-        if (!response.ok) {
-          setLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-        setContent(data || {});
-      } catch (_error) {
-        // Keep default content if backend is not available.
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchContent();
-  }, []);
+    reloadContent();
+  }, [reloadContent]);
 
   const updateContent = useCallback((contentKey, value) => {
     setContent((prev) => ({ ...prev, [contentKey]: value }));
+    setHasUnsavedChanges(true);
   }, []);
 
   const getContentValue = useCallback(
@@ -53,6 +57,7 @@ export const ContentProvider = ({ children }) => {
       throw new Error("Failed to save content");
     }
 
+    setHasUnsavedChanges(false);
     return true;
   }, [content]);
 
@@ -63,6 +68,8 @@ export const ContentProvider = ({ children }) => {
         loading,
         updateContent,
         getContentValue,
+        reloadContent,
+        hasUnsavedChanges,
         saveContent,
       }}
     >
