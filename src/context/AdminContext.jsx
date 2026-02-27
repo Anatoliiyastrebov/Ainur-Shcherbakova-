@@ -6,10 +6,16 @@ export const AdminProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
+  const endpoint = {
+    login: "/api/admin-login",
+    logout: "/api/admin-logout",
+    status: "/api/admin-status",
+  };
+
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch("/admin/status", {
+        const response = await fetch(endpoint.status, {
           credentials: "include",
         });
         if (!response.ok) return;
@@ -27,7 +33,7 @@ export const AdminProvider = ({ children }) => {
   }, []);
 
   const login = useCallback(async (password) => {
-    const response = await fetch("/admin/login", {
+    const response = await fetch(endpoint.login, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -45,7 +51,7 @@ export const AdminProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      await fetch("/admin/logout", {
+      await fetch(endpoint.logout, {
         method: "POST",
         credentials: "include",
       });

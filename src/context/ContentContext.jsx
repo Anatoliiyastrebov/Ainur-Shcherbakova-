@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 const ContentContext = createContext(undefined);
+const CONTENT_ENDPOINT = "/api/content";
 
 export const ContentProvider = ({ children }) => {
   const [content, setContent] = useState({});
@@ -9,7 +10,7 @@ export const ContentProvider = ({ children }) => {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const response = await fetch("/content", { credentials: "include" });
+        const response = await fetch(CONTENT_ENDPOINT, { credentials: "include" });
         if (!response.ok) {
           setLoading(false);
           return;
@@ -41,7 +42,7 @@ export const ContentProvider = ({ children }) => {
   );
 
   const saveContent = useCallback(async () => {
-    const response = await fetch("/content", {
+    const response = await fetch(CONTENT_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

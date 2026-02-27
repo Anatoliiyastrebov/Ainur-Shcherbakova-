@@ -48,7 +48,7 @@ const checkAdmin = (req, res, next) => {
   return res.status(403).json({ error: "Forbidden" });
 };
 
-app.post("/admin/login", (req, res) => {
+const adminLoginHandler = (req, res) => {
   const { password } = req.body || {};
   if (!password || password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: "Invalid password" });
@@ -60,29 +60,41 @@ app.post("/admin/login", (req, res) => {
     maxAge: 60 * 60 * 1000,
   });
   return res.json({ success: true });
-});
+};
 
-app.post("/admin/logout", (req, res) => {
+app.post("/admin/login", adminLoginHandler);
+app.post("/api/admin-login", adminLoginHandler);
+
+const adminLogoutHandler = (req, res) => {
   res.clearCookie("admin", {
     httpOnly: true,
     sameSite: "strict",
   });
   return res.json({ success: true });
-});
+};
 
-app.get("/admin/status", (req, res) => {
+app.post("/admin/logout", adminLogoutHandler);
+app.post("/api/admin-logout", adminLogoutHandler);
+
+const adminStatusHandler = (req, res) => {
   return res.json({ isAdmin: req.cookies?.admin === "true" });
-});
+};
 
-app.get("/content", (_req, res) => {
+app.get("/admin/status", adminStatusHandler);
+app.get("/api/admin-status", adminStatusHandler);
+
+const getContentHandler = (_req, res) => {
   try {
     return res.json(readContent());
   } catch (error) {
     return res.status(500).json({ error: "Failed to read content" });
   }
-});
+};
 
-app.post("/content", checkAdmin, (req, res) => {
+app.get("/content", getContentHandler);
+app.get("/api/content", getContentHandler);
+
+const saveContentHandler = (req, res) => {
   try {
     const current = readContent();
     const backupName = `content-${Date.now()}.json`;
@@ -94,7 +106,10 @@ app.post("/content", checkAdmin, (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: "Failed to save content" });
   }
-});
+};
+
+app.post("/content", checkAdmin, saveContentHandler);
+app.post("/api/content", checkAdmin, saveContentHandler);
 
 const staticCandidates = [path.join(projectRoot, "build"), path.join(projectRoot, "dist")];
 const staticDir = staticCandidates.find((dir) => fs.existsSync(dir));
