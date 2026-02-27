@@ -3,6 +3,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { AdminProvider } from "@/context/AdminContext";
+import { ContentProvider } from "@/context/ContentContext";
+import { AdminSaveBar } from "@/components/AdminSaveBar";
 import Index from "./pages/Index";
 import Anketa from "./pages/Anketa";
 import Success from "./pages/Success";
@@ -19,15 +22,20 @@ const App = () => (
       <Sonner position="top-center" />
       <BrowserRouter>
         <LanguageProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/anketa" element={<Anketa />} />
-            <Route path="/success" element={<Success />} />
-            <Route path="/questionnaire/:id" element={<QuestionnaireView />} />
-            <Route path="/data-request" element={<DataRequest />} />
-            <Route path="/impressum" element={<Impressum />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AdminProvider>
+            <ContentProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/anketa" element={<Anketa />} />
+                <Route path="/success" element={<Success />} />
+                <Route path="/questionnaire/:id" element={<QuestionnaireView />} />
+                <Route path="/data-request" element={<DataRequest />} />
+                <Route path="/impressum" element={<Impressum />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <AdminSaveBar />
+            </ContentProvider>
+          </AdminProvider>
         </LanguageProvider>
       </BrowserRouter>
     </TooltipProvider>

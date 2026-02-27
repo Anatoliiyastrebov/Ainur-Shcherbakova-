@@ -1,6 +1,8 @@
 import React from 'react';
 import { Question } from '@/lib/questionnaire-data';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAdmin } from '@/context/AdminContext';
+import { useContent } from '@/context/ContentContext';
 import { SectionIcon } from '@/components/icons/SectionIcons';
 
 interface QuestionFieldProps {
@@ -23,6 +25,14 @@ export const QuestionField: React.FC<QuestionFieldProps> = ({
   onAdditionalChange,
 }) => {
   const { language, t } = useLanguage();
+  const { editMode } = useAdmin();
+  const { getContentValue, updateContent } = useContent();
+
+  const getQuestionLabel = () =>
+    getContentValue(`questions.${question.id}.label.${language}`, question.label[language]);
+
+  const getOptionLabel = (optionValue: string, fallback: string) =>
+    getContentValue(`questions.${question.id}.options.${optionValue}.${language}`, fallback);
 
   const handleCheckboxChange = (optionValue: string, checked: boolean) => {
     const currentValues = Array.isArray(value) ? value : [];
@@ -103,7 +113,19 @@ export const QuestionField: React.FC<QuestionFieldProps> = ({
                   onChange={(e) => onChange(e.target.value)}
                   className="sr-only"
                 />
-                <span className="text-sm font-medium">{option.label[language]}</span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="bg-transparent border-b border-current/40 outline-none text-sm font-medium min-w-[120px]"
+                    value={getOptionLabel(option.value, option.label[language])}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      updateContent(`questions.${question.id}.options.${option.value}.${language}`, e.target.value)
+                    }
+                  />
+                ) : (
+                  <span className="text-sm font-medium">{getOptionLabel(option.value, option.label[language])}</span>
+                )}
               </label>
             ))}
           </div>
@@ -129,7 +151,19 @@ export const QuestionField: React.FC<QuestionFieldProps> = ({
                   onChange={(e) => handleCheckboxChange(option.value, e.target.checked)}
                   className="sr-only"
                 />
-                <span className="text-sm font-medium">{option.label[language]}</span>
+                {editMode ? (
+                  <input
+                    type="text"
+                    className="bg-transparent border-b border-current/40 outline-none text-sm font-medium min-w-[120px]"
+                    value={getOptionLabel(option.value, option.label[language])}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      updateContent(`questions.${question.id}.options.${option.value}.${language}`, e.target.value)
+                    }
+                  />
+                ) : (
+                  <span className="text-sm font-medium">{getOptionLabel(option.value, option.label[language])}</span>
+                )}
               </label>
             ))}
           </div>
@@ -144,7 +178,16 @@ export const QuestionField: React.FC<QuestionFieldProps> = ({
     <div className="space-y-3 animate-fade-in">
       <label className="flex items-center gap-2 text-foreground font-medium">
         <SectionIcon name={question.icon} />
-        <span>{question.label[language]}</span>
+        {editMode ? (
+          <input
+            type="text"
+            className="input-field py-1 h-9"
+            value={getQuestionLabel()}
+            onChange={(e) => updateContent(`questions.${question.id}.label.${language}`, e.target.value)}
+          />
+        ) : (
+          <span>{getQuestionLabel()}</span>
+        )}
         {question.required && <span className="text-destructive">*</span>}
       </label>
 

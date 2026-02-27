@@ -1,12 +1,39 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { CategoryCard } from '@/components/CategoryCard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAdmin } from '@/context/AdminContext';
+import { EditableText } from '@/components/EditableText';
+import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { Heart, Sparkles } from 'lucide-react';
 
 const Index: React.FC = () => {
   const { t } = useLanguage();
+  const { isAdmin, setEditMode } = useAdmin();
+  const [clickTimestamps, setClickTimestamps] = useState<number[]>([]);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const lastTapRef = useRef(0);
+
+  const handleWelcomeTap = () => {
+    if (isAdmin) {
+      setEditMode(true);
+      return;
+    }
+    const now = Date.now();
+    // Prevent duplicate tap events fired by some mobile browsers
+    if (now - lastTapRef.current < 80) return;
+    lastTapRef.current = now;
+
+    setClickTimestamps((prev) => {
+      const freshClicks = [...prev.filter((time) => now - time < 3000), now];
+      if (freshClicks.length >= 3) {
+        setShowAdminLogin(true);
+        return [];
+      }
+      return freshClicks;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -17,15 +44,26 @@ const Index: React.FC = () => {
         <section className="text-center mb-16 animate-fade-in">
           <div className="inline-flex items-center gap-2 bg-accent/50 text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            <span>{t('welcome')}</span>
+            <span
+              onPointerDown={handleWelcomeTap}
+              onClick={handleWelcomeTap}
+              className="select-none"
+            >
+              <EditableText contentKey="welcomeTitle" value={t('welcome')} />
+            </span>
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            {t('siteTitle')}
+            <EditableText contentKey="siteTitle" value={t('siteTitle')} />
           </h1>
           
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            {t('welcomeDescription')}
+            <EditableText
+              contentKey="welcomeDescription"
+              value={t('welcomeDescription')}
+              multiline
+              className="text-lg"
+            />
           </p>
         </section>
 
@@ -33,7 +71,7 @@ const Index: React.FC = () => {
         <section className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-semibold text-center text-foreground mb-8 flex items-center justify-center gap-2">
             <Heart className="w-6 h-6 text-primary" />
-            {t('selectCategory')}
+            <EditableText contentKey="selectCategory" value={t('selectCategory')} />
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -66,6 +104,7 @@ const Index: React.FC = () => {
       </main>
       
       <Footer />
+      <AdminLoginModal open={showAdminLogin} onClose={() => setShowAdminLogin(false)} />
     </div>
   );
 };

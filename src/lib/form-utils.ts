@@ -201,7 +201,8 @@ export const generateMarkdown = (
   formData: FormData,
   additionalData: FormAdditionalData,
   contactData: ContactData,
-  lang: Language
+  lang: Language,
+  contentOverrides?: Record<string, string>
 ): string => {
   const t = translations[lang];
   const headers = {
@@ -223,6 +224,10 @@ export const generateMarkdown = (
 
   // Start with header
   let html = `<b>${escapeHtml(headers[type])}</b>\n`;
+  const getOverrideText = (contentKey: string, fallback: string) => {
+    const value = contentOverrides?.[contentKey];
+    return typeof value === 'string' ? value : fallback;
+  };
 
   let questionNumber = 1;
   let digestionQuestionPassed = false;
@@ -244,7 +249,10 @@ export const generateMarkdown = (
       const additional = additionalData[`${question.id}_additional`];
 
       if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
-        const label = question.label[lang];
+        const label = getOverrideText(
+          `questions.${question.id}.label.${lang}`,
+          question.label[lang]
+        );
         
         // Question number - start numbering from "digestion" question
         if (question.id === 'digestion') {
@@ -257,12 +265,22 @@ export const generateMarkdown = (
         if (Array.isArray(value)) {
           const optionLabels = value.map((v) => {
             const opt = question.options?.find((o) => o.value === v);
-            return opt ? opt.label[lang] : v;
+            return opt
+              ? getOverrideText(
+                  `questions.${question.id}.options.${opt.value}.${lang}`,
+                  opt.label[lang]
+                )
+              : v;
           });
           answerText = optionLabels.join(', ');
         } else if (question.options) {
           const opt = question.options.find((o) => o.value === value);
-          answerText = opt ? opt.label[lang] : value;
+          answerText = opt
+            ? getOverrideText(
+                `questions.${question.id}.options.${opt.value}.${lang}`,
+                opt.label[lang]
+              )
+            : value;
         } else {
           answerText = String(value);
         }
@@ -698,6 +716,65 @@ Current status:
     return { 
       success: false, 
       error: errorMessage 
+    };
+  }
+};
+
+// Send files to Telegram
+export const sendFilesToTelegram = async (files: File[]): Promise<{ success: boolean; error?: string }> => {
+  if (!files || files.length === 0) {
+    return { success: true }; // No files to send, but that's OK
+  }
+
+  const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+
+  if (!BOT_TOKEN || !CHAT_ID || BOT_TOKEN.trim() === '' || CHAT_ID.trim() === '') {
+    return { success: false, error: 'Telegram Bot Token or Chat ID not configured' };
+  }
+
+  try {
+    // Send each file separately
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('chat_id', CHAT_ID);
+      formData.append('document', file);
+      formData.append('caption', `📎 ${file.name}`);
+
+      const response = await fetch(
+        `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error sending file to Telegram:', errorData);
+        return { 
+          success: false, 
+          error: `Failed to send file ${file.name}: ${errorData.description || response.statusText}` 
+        };
+      }
+
+      const responseData = await response.json();
+      if (!responseData.ok) {
+        console.error('Telegram API returned error for file:', responseData);
+        return { 
+          success: false, 
+          error: `Failed to send file ${file.name}: ${responseData.description || 'Unknown error'}` 
+        };
+      }
+    }
+
+    console.log(`Successfully sent ${files.length} file(s) to Telegram`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error sending files to Telegram:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to send files to Telegram' 
     };
   }
 };

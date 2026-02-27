@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -7,6 +7,7 @@ import { ContactSection } from '@/components/form/ContactSection';
 import { DSGVOCheckbox } from '@/components/form/DSGVOCheckbox';
 import { MarkdownPreview } from '@/components/form/MarkdownPreview';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useContent } from '@/context/ContentContext';
 import { SectionIcon } from '@/components/icons/SectionIcons';
 import {
   getQuestionnaire,
@@ -24,6 +25,7 @@ import {
   loadFormData,
   clearFormData,
   sendToTelegram,
+  sendFilesToTelegram,
   saveQuestionnaire,
 } from '@/lib/form-utils';
 import { Eye, Send, Trash2, Loader2, AlertCircle } from 'lucide-react';
@@ -34,6 +36,7 @@ const Anketa: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { language, t } = useLanguage();
+  const { content } = useContent();
 
   const type = (searchParams.get('type') as QuestionnaireType) || 'infant';
   const sections = useMemo(() => getQuestionnaire(type), [type]);
@@ -57,6 +60,7 @@ const Anketa: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [bloodTestFiles, setBloodTestFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved form data on mount
   useEffect(() => {
@@ -212,13 +216,17 @@ const Anketa: React.FC = () => {
     setContactData({ telegram: '', instagram: '' });
     setDsgvoAccepted(false);
     setErrors({});
+    setBloodTestFiles([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     clearFormData(type, language);
     toast.success(language === 'ru' ? 'Форма очищена' : 'Form cleared');
   };
 
   const markdown = useMemo(() => {
-    return generateMarkdown(type, sections, formData, additionalData, contactData, language);
-  }, [type, sections, formData, additionalData, contactData, language]);
+    return generateMarkdown(type, sections, formData, additionalData, contactData, language, content as Record<string, string>);
+  }, [type, sections, formData, additionalData, contactData, language, content]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,6 +252,21 @@ const Anketa: React.FC = () => {
     try {
       // First send to Telegram to get message_id
       const telegramResult = await sendToTelegram(markdown);
+      
+      // Send files to Telegram if any
+      if (bloodTestFiles.length > 0) {
+        const filesResult = await sendFilesToTelegram(bloodTestFiles);
+        if (!filesResult.success) {
+          console.warn('Failed to send files to Telegram:', filesResult.error);
+          // Don't block submission if files fail, just log warning
+          toast.warning(
+            language === 'ru' 
+              ? 'Анкета отправлена, но файлы не удалось отправить'
+              : 'Questionnaire sent, but files could not be sent',
+            { duration: 3000 }
+          );
+        }
+      }
       
       // Then save the questionnaire with message_id
       const saveResult = await saveQuestionnaire(
@@ -428,6 +451,7 @@ const Anketa: React.FC = () => {
               <span>{language === 'ru' ? 'Результаты анализов крови за последние 3 месяца (необязательно)' : 'Blood test results for the last 3 months (optional)'}</span>
             </label>
             <input
+              ref={fileInputRef}
               type="file"
               multiple
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
