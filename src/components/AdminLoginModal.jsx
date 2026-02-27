@@ -19,7 +19,7 @@ export const AdminLoginModal = ({ open, onClose }) => {
       setPassword("");
       onClose();
     } catch (_err) {
-      setError("Неверный пароль");
+      setError("Неверный пароль или недоступен backend");
     } finally {
       setSubmitting(false);
     }
